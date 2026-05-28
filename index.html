@@ -1,0 +1,950 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>RevOps Dashboard</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- XLSX -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+</head>
+
+<body class="bg-gray-100 min-h-screen p-6">
+
+<div class="max-w-7xl mx-auto space-y-6">
+
+  <!-- HEADER -->
+  <div class="bg-white rounded-2xl shadow p-6">
+
+    <h1 class="text-3xl font-bold">
+      RevOps Lead Intelligence Dashboard
+    </h1>
+
+    <p class="text-gray-500 mt-2">
+      Upload Salesforce reports to generate insights automatically.
+    </p>
+
+  </div>
+
+  <!-- SOURCE REPORT -->
+  <div class="bg-white rounded-2xl shadow p-6 space-y-4">
+
+    <h2 class="text-xl font-semibold">
+      Upload Source Summary Report
+    </h2>
+
+    <input
+      type="file"
+      id="sourceFile"
+      class="border p-2 rounded w-full"
+    />
+
+  </div>
+
+  <!-- ADVISOR REPORT -->
+  <div class="bg-white rounded-2xl shadow p-6 space-y-4">
+
+    <h2 class="text-xl font-semibold">
+      Upload Advisor Report
+    </h2>
+
+    <select
+      id="advisorBU"
+      class="border p-2 rounded w-full"
+    >
+
+      <option value="InterActive">
+        InterActive
+      </option>
+
+      <option value="LSBF Professional Qualifications">
+        LSBF Professional Qualifications
+      </option>
+
+      <option value="LSBF Executive Education">
+        LSBF Executive Education
+      </option>
+
+    </select>
+
+    <input
+      type="file"
+      id="advisorFile"
+      multiple
+      class="border p-2 rounded w-full"
+    />
+
+  </div>
+
+  <!-- KPI TABLE -->
+  <div class="bg-white rounded-2xl shadow p-6">
+
+    <h2 class="text-2xl font-bold mb-6">
+      BU Performance Summary
+    </h2>
+
+    <div class="overflow-x-auto">
+
+      <table
+        class="min-w-full border border-gray-200"
+      >
+
+        <thead class="bg-gray-100">
+
+          <tr>
+
+            <th class="border p-3">
+              Business Unit
+            </th>
+
+            <th class="border p-3">
+              Total Leads
+            </th>
+
+            <th class="border p-3">
+              Active Leads
+            </th>
+
+            <th class="border p-3">
+              Qualified
+            </th>
+
+            <th class="border p-3">
+              Unqualified
+            </th>
+
+            <th class="border p-3">
+              Qualification %
+            </th>
+
+          </tr>
+
+        </thead>
+
+        <tbody id="kpiTableBody">
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+  <!-- SOURCE CHART -->
+  <div class="bg-white rounded-2xl shadow p-6">
+
+    <h2 class="text-xl font-semibold mb-6">
+      Source Performance
+    </h2>
+
+    <canvas id="sourceChart"></canvas>
+
+  </div>
+
+  <!-- SOURCE TABLE -->
+  <div class="bg-white rounded-2xl shadow p-6">
+
+    <h2 class="text-xl font-semibold mb-6">
+      Source Intelligence
+    </h2>
+
+    <div id="sourceTableBody">
+
+    </div>
+
+  </div>
+
+  <!-- ADVISOR CHART -->
+  <div class="bg-white rounded-2xl shadow p-6">
+
+    <h2 class="text-xl font-semibold mb-6">
+      Advisor Qualification %
+    </h2>
+
+    <canvas id="advisorChart"></canvas>
+
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="bg-white rounded-2xl shadow p-6">
+
+    <h2 class="text-xl font-semibold mb-4">
+      Auto Generated Insights
+    </h2>
+
+    <ul
+      id="insights"
+      class="list-disc pl-5 space-y-2"
+    ></ul>
+
+  </div>
+
+</div>
+
+<script>
+
+let sourceData = [];
+let advisorData = [];
+
+let sourceChart = null;
+let advisorChart = null;
+
+// =====================================
+// EVENT LISTENERS
+// =====================================
+
+document
+  .getElementById("sourceFile")
+  .addEventListener("change", handleSourceUpload);
+
+document
+  .getElementById("advisorFile")
+  .addEventListener("change", handleAdvisorUpload);
+
+// =====================================
+// SOURCE FILE HANDLER
+// =====================================
+
+function handleSourceUpload(event) {
+
+  const file = event.target.files[0];
+
+  if(!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+
+    const data = new Uint8Array(e.target.result);
+
+    const workbook = XLSX.read(data, {
+      type: 'array'
+    });
+
+    const sheet = workbook.Sheets[
+      workbook.SheetNames[0]
+    ];
+
+    let parsedData =
+      XLSX.utils.sheet_to_json(sheet);
+
+    let currentBU = "";
+    let currentStatus = "";
+    let currentSource = "";
+
+    parsedData = parsedData.map(row => {
+
+      if(row["Business Unit"]) {
+        currentBU = row["Business Unit"];
+      } else {
+        row["Business Unit"] = currentBU;
+      }
+
+      if(row["Lead Status"]) {
+        currentStatus = row["Lead Status"];
+      } else {
+        row["Lead Status"] = currentStatus;
+      }
+
+      if(row["Lead Source"]) {
+        currentSource = row["Lead Source"];
+      } else {
+        row["Lead Source"] = currentSource;
+      }
+
+      return row;
+
+    });
+
+    sourceData = parsedData;
+
+    calculateDashboard();
+
+  };
+
+  reader.readAsArrayBuffer(file);
+
+}
+
+// =====================================
+// ADVISOR FILE HANDLER
+// =====================================
+
+function handleAdvisorUpload(event) {
+
+  const files = event.target.files;
+
+  if(!files.length) return;
+
+  const selectedBU =
+    document.getElementById("advisorBU").value;
+
+  advisorData = [];
+
+  Array.from(files).forEach(file => {
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+
+      const data = new Uint8Array(e.target.result);
+
+      const workbook = XLSX.read(data, {
+        type: 'array'
+      });
+
+      const sheet = workbook.Sheets[
+        workbook.SheetNames[0]
+      ];
+
+      let parsedData =
+        XLSX.utils.sheet_to_json(sheet);
+
+      let currentAdvisor = "";
+      let currentSource = "";
+      let currentStatus = "";
+
+      parsedData = parsedData.map(row => {
+
+        row["Business Unit"] = selectedBU;
+
+        if(row["Lead Owner"]) {
+          currentAdvisor = row["Lead Owner"];
+        } else {
+          row["Lead Owner"] = currentAdvisor;
+        }
+
+        if(row["Lead Source"]) {
+          currentSource = row["Lead Source"];
+        } else {
+          row["Lead Source"] = currentSource;
+        }
+
+        if(row["Lead Status"]) {
+          currentStatus = row["Lead Status"];
+        } else {
+          row["Lead Status"] = currentStatus;
+        }
+
+        return row;
+
+      });
+
+      advisorData = [
+        ...advisorData,
+        ...parsedData
+      ];
+
+      calculateDashboard();
+
+    };
+
+    reader.readAsArrayBuffer(file);
+
+  });
+
+}
+
+// =====================================
+// MAIN DASHBOARD
+// =====================================
+
+function calculateDashboard() {
+
+  calculateKPIs();
+
+  renderSourceChart();
+
+  renderSourceTable();
+
+  renderAdvisorChart();
+
+  generateInsights();
+
+}
+
+// =====================================
+// KPI TABLE
+// =====================================
+
+function calculateKPIs() {
+
+  const buMap = {};
+
+  sourceData.forEach(row => {
+
+    const bu = row["Business Unit"];
+
+    const status = row["Lead Status"];
+
+    const count =
+      Number(row["Record Count"]) || 0;
+
+    if(!buMap[bu]) {
+
+      buMap[bu] = {
+
+        total: 0,
+        active: 0,
+        qualified: 0,
+        unqualified: 0
+
+      };
+
+    }
+
+    buMap[bu].total += count;
+
+    if(
+      status === "New" ||
+      status === "Working" ||
+      status === "Nurturing"
+    ) {
+
+      buMap[bu].active += count;
+
+    }
+
+    if(status === "Qualified") {
+
+      buMap[bu].qualified += count;
+
+    }
+
+    if(status === "Unqualified") {
+
+      buMap[bu].unqualified += count;
+
+    }
+
+  });
+
+  const tbody =
+    document.getElementById("kpiTableBody");
+
+  tbody.innerHTML = "";
+
+  Object.keys(buMap).forEach(bu => {
+
+    const item = buMap[bu];
+
+    const qualPercent =
+      item.total > 0
+        ? (
+            (item.qualified / item.total)
+            * 100
+          ).toFixed(1)
+        : 0;
+
+    const tr =
+      document.createElement("tr");
+
+    tr.innerHTML = `
+
+      <td class="border p-3 font-semibold">
+        ${bu}
+      </td>
+
+      <td class="border p-3">
+        ${item.total}
+      </td>
+
+      <td class="border p-3">
+        ${item.active}
+      </td>
+
+      <td class="border p-3">
+        ${item.qualified}
+      </td>
+
+      <td class="border p-3">
+        ${item.unqualified}
+      </td>
+
+      <td class="border p-3">
+        ${qualPercent}%
+      </td>
+
+    `;
+
+    tbody.appendChild(tr);
+
+  });
+
+}
+
+// =====================================
+// SOURCE CHART
+// =====================================
+
+function renderSourceChart() {
+
+  const sourceMap = {};
+
+  sourceData.forEach(row => {
+
+    const source = row["Lead Source"];
+
+    const status = row["Lead Status"];
+
+    const count =
+      Number(row["Record Count"]) || 0;
+
+    if(!sourceMap[source]) {
+
+      sourceMap[source] = {
+
+        leads: 0,
+        qualified: 0
+
+      };
+
+    }
+
+    sourceMap[source].leads += count;
+
+    if(status === "Qualified") {
+
+      sourceMap[source].qualified += count;
+
+    }
+
+  });
+
+  const labels = [];
+  const totalLeads = [];
+  const qualifiedLeads = [];
+
+  Object.keys(sourceMap).forEach(source => {
+
+    labels.push(source);
+
+    totalLeads.push(
+      sourceMap[source].leads
+    );
+
+    qualifiedLeads.push(
+      sourceMap[source].qualified
+    );
+
+  });
+
+  const ctx =
+    document.getElementById("sourceChart");
+
+  if(sourceChart) {
+    sourceChart.destroy();
+  }
+
+  sourceChart = new Chart(ctx, {
+
+    type: 'bar',
+
+    data: {
+
+      labels: labels,
+
+      datasets: [
+
+        {
+          label: 'Total Leads',
+          data: totalLeads
+        },
+
+        {
+          label: 'Qualified Leads',
+          data: qualifiedLeads
+        }
+
+      ]
+
+    },
+
+    options: {
+
+      responsive: true
+
+    }
+
+  });
+
+}
+
+// =====================================
+// SOURCE TABLE
+// =====================================
+
+function renderSourceTable() {
+
+  const container =
+    document.getElementById("sourceTableBody");
+
+  container.innerHTML = "";
+
+  const buMap = {};
+
+  sourceData.forEach(row => {
+
+    const bu = row["Business Unit"];
+
+    const source = row["Lead Source"];
+
+    const status = row["Lead Status"];
+
+    const count =
+      Number(row["Record Count"]) || 0;
+
+    if(!buMap[bu]) {
+      buMap[bu] = {};
+    }
+
+    if(!buMap[bu][source]) {
+
+      buMap[bu][source] = {
+
+        leads: 0,
+        active: 0,
+        qualified: 0,
+        unqualified: 0
+
+      };
+
+    }
+
+    buMap[bu][source].leads += count;
+
+    if(
+      status === "New" ||
+      status === "Working" ||
+      status === "Nurturing"
+    ) {
+
+      buMap[bu][source].active += count;
+
+    }
+
+    if(status === "Qualified") {
+
+      buMap[bu][source].qualified += count;
+
+    }
+
+    if(status === "Unqualified") {
+
+      buMap[bu][source].unqualified += count;
+
+    }
+
+  });
+
+  Object.keys(buMap).forEach(bu => {
+
+    const section =
+      document.createElement("div");
+
+    section.className = "mb-10";
+
+    let html = `
+
+      <h3 class="text-2xl font-bold mb-4">
+        ${bu}
+      </h3>
+
+      <div class="overflow-x-auto">
+
+      <table
+        class="min-w-full border border-gray-200 mb-6"
+      >
+
+        <thead class="bg-gray-100">
+
+          <tr>
+
+            <th class="border p-2">Source</th>
+
+            <th class="border p-2">Leads</th>
+
+            <th class="border p-2">Active</th>
+
+            <th class="border p-2">Qualified</th>
+
+            <th class="border p-2">Unqualified</th>
+
+            <th class="border p-2">Qual %</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+    `;
+
+    Object.keys(buMap[bu]).forEach(source => {
+
+      const item =
+        buMap[bu][source];
+
+      const qualPercent =
+        item.leads > 0
+          ? (
+              (item.qualified / item.leads)
+              * 100
+            ).toFixed(1)
+          : 0;
+
+      html += `
+
+        <tr>
+
+          <td class="border p-2">
+            ${source}
+          </td>
+
+          <td class="border p-2">
+            ${item.leads}
+          </td>
+
+          <td class="border p-2">
+            ${item.active}
+          </td>
+
+          <td class="border p-2">
+            ${item.qualified}
+          </td>
+
+          <td class="border p-2">
+            ${item.unqualified}
+          </td>
+
+          <td class="border p-2">
+            ${qualPercent}%
+          </td>
+
+        </tr>
+
+      `;
+
+    });
+
+    html += `
+
+        </tbody>
+
+      </table>
+
+      </div>
+
+    `;
+
+    section.innerHTML = html;
+
+    container.appendChild(section);
+
+  });
+
+}
+
+// =====================================
+// ADVISOR CHART
+// =====================================
+
+function renderAdvisorChart() {
+
+  const advisorMap = {};
+
+  advisorData.forEach(row => {
+
+    const advisor = row["Lead Owner"];
+
+    const status = row["Lead Status"];
+
+    const count =
+      Number(row["Record Count"]) || 0;
+
+    if(!advisorMap[advisor]) {
+
+      advisorMap[advisor] = {
+
+        total: 0,
+        qualified: 0
+
+      };
+
+    }
+
+    advisorMap[advisor].total += count;
+
+    if(status === "Qualified") {
+
+      advisorMap[advisor].qualified += count;
+
+    }
+
+  });
+
+  const labels = [];
+  const values = [];
+
+  Object.keys(advisorMap).forEach(advisor => {
+
+    const item = advisorMap[advisor];
+
+    const qualification =
+      item.total > 0
+        ? (
+            (item.qualified / item.total)
+            * 100
+          ).toFixed(1)
+        : 0;
+
+    labels.push(advisor);
+
+    values.push(qualification);
+
+  });
+
+  const ctx =
+    document.getElementById("advisorChart");
+
+  if(advisorChart) {
+    advisorChart.destroy();
+  }
+
+  advisorChart = new Chart(ctx, {
+
+    type: 'bar',
+
+    data: {
+
+      labels: labels,
+
+      datasets: [
+
+        {
+          label: 'Qualification %',
+          data: values
+        }
+
+      ]
+
+    },
+
+    options: {
+
+      responsive: true
+
+    }
+
+  });
+
+}
+
+// =====================================
+// INSIGHTS
+// =====================================
+
+function generateInsights() {
+
+  const insights = [];
+
+  const sourceMap = {};
+
+  sourceData.forEach(row => {
+
+    const source = row["Lead Source"];
+
+    const status = row["Lead Status"];
+
+    const count =
+      Number(row["Record Count"]) || 0;
+
+    if(!sourceMap[source]) {
+
+      sourceMap[source] = {
+
+        total: 0,
+        qualified: 0
+
+      };
+
+    }
+
+    sourceMap[source].total += count;
+
+    if(status === "Qualified") {
+
+      sourceMap[source].qualified += count;
+
+    }
+
+  });
+
+  let bestSource = "";
+  let bestRate = 0;
+
+  Object.keys(sourceMap).forEach(source => {
+
+    const item = sourceMap[source];
+
+    const rate =
+      item.total > 0
+        ? (
+            item.qualified /
+            item.total
+          ) * 100
+        : 0;
+
+    if(rate > bestRate) {
+
+      bestRate = rate;
+
+      bestSource = source;
+
+    }
+
+  });
+
+  if(bestSource) {
+
+    insights.push(
+      `${bestSource} is currently the strongest lead source with ${bestRate.toFixed(1)}% qualification rate.`
+    );
+
+  }
+
+  const insightsContainer =
+    document.getElementById("insights");
+
+  insightsContainer.innerHTML = "";
+
+  insights.forEach(insight => {
+
+    const li =
+      document.createElement("li");
+
+    li.innerText = insight;
+
+    insightsContainer.appendChild(li);
+
+  });
+
+}
+
+</script>
+
+</body>
+</html>
+
