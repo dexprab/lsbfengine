@@ -10,19 +10,67 @@
   <title>RevOps Dashboard</title>
 
   <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com">
+function toggleSection(id){
+ const el=document.getElementById(id);
+ if(!el) return;
+ el.classList.toggle('collapsed');
+ localStorage.setItem(id, el.classList.contains('collapsed'));
+}
+function restoreSection(id){
+ const el=document.getElementById(id);
+ if(localStorage.getItem(id)==='true'){ el.classList.add('collapsed'); }
+}
+</script>
 
   <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js">
+function toggleSection(id){
+ const el=document.getElementById(id);
+ if(!el) return;
+ el.classList.toggle('collapsed');
+ localStorage.setItem(id, el.classList.contains('collapsed'));
+}
+function restoreSection(id){
+ const el=document.getElementById(id);
+ if(localStorage.getItem(id)==='true'){ el.classList.add('collapsed'); }
+}
+</script>
 
   <!-- XLSX -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js">
+function toggleSection(id){
+ const el=document.getElementById(id);
+ if(!el) return;
+ el.classList.toggle('collapsed');
+ localStorage.setItem(id, el.classList.contains('collapsed'));
+}
+function restoreSection(id){
+ const el=document.getElementById(id);
+ if(localStorage.getItem(id)==='true'){ el.classList.add('collapsed'); }
+}
+</script>
 
+
+<style>
+.sticky-nav{position:sticky;top:0;z-index:100;background:#fff;padding:10px;border-radius:12px}
+.section-content.collapsed{display:none}
+.toggle-header{cursor:pointer;font-weight:700;font-size:1.25rem;margin-bottom:12px}
+.school-content.collapsed{display:none}
+.school-toggle{cursor:pointer;font-weight:600;margin:10px 0}
+</style>
 </head>
 
 <body class="bg-gray-100 min-h-screen p-6">
 
 <div class="max-w-7xl mx-auto space-y-6">
+<div class="sticky-nav shadow">
+<a href="#kpi">BU Summary</a> |
+<a href="#sources">Sources</a> |
+<a href="#leaderboard">Leaderboard</a> |
+<a href="#schools">Schools</a> |
+<a href="#insightsSec">Insights</a>
+</div>
 
   <!-- HEADER -->
   <div class="bg-white rounded-2xl shadow p-6">
@@ -77,7 +125,7 @@
   </div>
 
   <!-- KPI TABLE -->
-  <div class="bg-white rounded-2xl shadow p-6">
+  <div id="kpi" class="bg-white rounded-2xl shadow p-6">
 
     <h2 class="text-2xl font-bold mb-6">
       BU Performance Summary
@@ -128,66 +176,78 @@
       </table>
 
     </div>
+</div>
 
   </div>
 
   <!-- SOURCE CHART -->
-  <div class="bg-white rounded-2xl shadow p-6">
+  <div id="sources" class="bg-white rounded-2xl shadow p-6">
 
-    <h2 class="text-xl font-semibold mb-6">
-      Source Performance
-    </h2>
+    <div class="toggle-header" onclick="toggleSection('sec_sourcechart')">▼ Source Performance</div><div id="sec_sourcechart" class="section-content">
 
     <canvas id="sourceChart"></canvas>
+</div>
 
   </div>
 
   <!-- SOURCE TABLE -->
   <div class="bg-white rounded-2xl shadow p-6">
 
-    <h2 class="text-xl font-semibold mb-6">
-      Source Intelligence
-    </h2>
+    <div class="toggle-header" onclick="toggleSection('sec_sourceintel')">▼ Source Intelligence</div><div id="sec_sourceintel" class="section-content">
 
-    <div id="sourceTableBody">
-
-    </div>
+    <div id="sourceTableBody"></div></div>
 
   </div>
 
   <!-- ADVISOR CHART -->
   <div class="bg-white rounded-2xl shadow p-6">
 
-    <h2 class="text-xl font-semibold mb-6">
-      Advisor Qualification %
-    </h2>
+    <div class="toggle-header" onclick="toggleSection('sec_advisorchart')">▼ Advisor Qualification %</div><div id="sec_advisorchart" class="section-content">
 
-    <canvas id="advisorChart"></canvas>
+    <canvas id="advisorChart"></canvas></div>
 
   </div>
 
   
   <!-- SCHOOL COMPARISON -->
   <div class="bg-white rounded-2xl shadow p-6">
-    <h2 class="text-xl font-semibold mb-4">School Comparison</h2>
-    <div id="advisorCoverage">Phase A placeholder</div>
+    <div class="toggle-header" onclick="toggleSection('sec_coverage')">▼ School Comparison</div><div id="sec_coverage" class="section-content">
+    <div id="advisorCoverage">Phase A placeholder</div></div>
   </div>
 
   <!-- ADVISOR LEADERBOARD -->
-  <div class="bg-white rounded-2xl shadow p-6">
-    <h2 class="text-xl font-semibold mb-4">Advisor Leaderboard</h2>
-    <div id="advisorLeaderboard">Phase A placeholder</div>
+  <div id="leaderboard" class="bg-white rounded-2xl shadow p-6">
+    <div class="toggle-header" onclick="toggleSection('sec_leaderboard')">▼ Advisor Leaderboard</div><div id="sec_leaderboard" class="section-content">
+    <div id="advisorLeaderboard">Phase A placeholder</div></div>
   </div>
 
-  <!-- ADVISOR PERFORMANCE -->
+  
+  <!-- ADVISOR SOURCE MATRIX -->
   <div class="bg-white rounded-2xl shadow p-6">
-    <h2 class="text-xl font-semibold mb-4">Advisor Performance by School</h2>
-    <div id="advisorBySchool">Phase A placeholder</div>
+    <div class="toggle-header" onclick="toggleSection('sec_matrix')">▼ Advisor × Source Matrix</div>
+    <div id="sec_matrix" class="section-content">
+      <div class="mb-4">
+        <select id="matrixFilter" class="border p-2 rounded" onchange="renderAdvisorSourceMatrix()">
+          <option value="All">All Schools</option>
+          <option value="InterActive">InterActive</option>
+          <option value="LSBF Professional Qualifications">PQ</option>
+          <option value="LSBF Executive Education">Executive</option>
+        </select>
+      </div>
+      <div id="advisorSourceMatrix"></div>
+    </div>
+  </div>
+
+
+<!-- ADVISOR PERFORMANCE -->
+  <div id="schools" class="bg-white rounded-2xl shadow p-6">
+    <div class="toggle-header" onclick="toggleSection('sec_schools')">▼ Advisor Performance by School</div><div id="sec_schools" class="section-content">
+    <div id="advisorBySchool">Phase A placeholder</div></div>
   </div>
 
 
   <!-- INSIGHTS -->
-  <div class="bg-white rounded-2xl shadow p-6">
+  <div id="insightsSec" class="bg-white rounded-2xl shadow p-6">
 
     <h2 class="text-xl font-semibold mb-4">
       Auto Generated Insights
@@ -196,7 +256,7 @@
     <ul
       id="insights"
       class="list-disc pl-5 space-y-2"
-    ></ul>
+    ></ul></div>
 
   </div>
 
@@ -424,6 +484,8 @@ console.log(
 );
 
   renderAdvisorLeaderboard();
+
+  renderAdvisorSourceMatrix();
 
   renderAdvisorBySchool();
 
@@ -1039,6 +1101,75 @@ function renderAdvisorBySchool() {
  c.innerHTML=html;
 }
 
+
+function renderAdvisorSourceMatrix(){
+
+ const container=document.getElementById("advisorSourceMatrix");
+ if(!container) return;
+
+ const filter=document.getElementById("matrixFilter")?.value || "All";
+
+ const matrix={};
+ const sources=new Set();
+ const totals={};
+
+ advisorData.forEach(row=>{
+
+   const advisor=row["Lead Owner"]||"";
+   if(EXCLUDED_ADVISORS.includes(advisor)) return;
+
+   const bu=row["Business Unit"]||"";
+   if(filter!=="All" && bu!==filter) return;
+
+   const status=String(row["Lead Status"]||"").trim().toLowerCase();
+   if(status!=="qualified") return;
+
+   const source=row["Lead Source"]||"Unknown";
+   const count=Number(row["Record Count"])||0;
+
+   sources.add(source);
+
+   if(!matrix[advisor]) matrix[advisor]={total:0};
+
+   matrix[advisor][source]=(matrix[advisor][source]||0)+count;
+   matrix[advisor].total+=count;
+
+   totals[source]=(totals[source]||0)+count;
+ });
+
+ const sourceList=[...sources].sort();
+
+ let rows=Object.entries(matrix)
+ .map(([advisor,data])=>({advisor,...data}))
+ .sort((a,b)=>(b.total||0)-(a.total||0));
+
+ let h='<div class="overflow-x-auto"><table class="min-w-full border"><thead><tr><th class="border p-2">Advisor</th>';
+
+ sourceList.forEach(s=> h+=`<th class="border p-2">${s}</th>`);
+ h+='<th class="border p-2">Total</th></tr></thead><tbody>';
+
+ rows.forEach(r=>{
+   h+=`<tr><td class="border p-2 font-semibold">${r.advisor}</td>`;
+   sourceList.forEach(s=>{
+      const v=r[s]||0;
+      const bg=v===0?'#f3f4f6':'';
+      h+=`<td class="border p-2" style="background:${bg}">${v}</td>`;
+   });
+   h+=`<td class="border p-2 font-bold">${r.total||0}</td></tr>`;
+ });
+
+ h+='<tr class="font-bold"><td class="border p-2">TOTAL</td>';
+ let grand=0;
+ sourceList.forEach(s=>{
+   grand+=totals[s]||0;
+   h+=`<td class="border p-2">${totals[s]||0}</td>`;
+ });
+ h+=`<td class="border p-2">${grand}</td></tr>`;
+ h+='</tbody></table></div>';
+
+ container.innerHTML=h;
+}
+
 // =====================================
 // INSIGHTS
 // =====================================
@@ -1334,6 +1465,17 @@ function generateInsights_old() {
 
 }
 
+
+function toggleSection(id){
+ const el=document.getElementById(id);
+ if(!el) return;
+ el.classList.toggle('collapsed');
+ localStorage.setItem(id, el.classList.contains('collapsed'));
+}
+function restoreSection(id){
+ const el=document.getElementById(id);
+ if(localStorage.getItem(id)==='true'){ el.classList.add('collapsed'); }
+}
 </script>
 
 </body>
