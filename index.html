@@ -1,4 +1,4 @@
-```html
+html
 <!DOCTYPE html>
 <html lang="en">
 
@@ -387,7 +387,10 @@ function calculateKPIs() {
 
     const bu = row["Business Unit"];
 
-    const status = row["Lead Status"];
+    const status =
+      String(row["Lead Status"] || "")
+      .trim()
+      .toLowerCase();
 
     const count =
       Number(row["Record Count"]) || 0;
@@ -408,22 +411,22 @@ function calculateKPIs() {
     buMap[bu].total += count;
 
     if(
-      status === "New" ||
-      status === "Working" ||
-      status === "Nurturing"
+      status === "new" ||
+      status === "working" ||
+      status === "nurturing"
     ) {
 
       buMap[bu].active += count;
 
     }
 
-    if(status === "Qualified") {
+    if(status === "qualified") {
 
       buMap[bu].qualified += count;
 
     }
 
-    if(status === "Unqualified") {
+    if(status === "unqualified") {
 
       buMap[bu].unqualified += count;
 
@@ -857,6 +860,210 @@ function renderAdvisorChart() {
 // =====================================
 
 function generateInsights() {
+
+  const insights = [];
+
+  // =====================================
+  // SOURCE ANALYSIS
+  // =====================================
+
+  const sourceMap = {};
+
+  sourceData.forEach(row => {
+
+    const source = row["Lead Source"];
+
+    const status =
+  String(row["Lead Status"] || "")
+  .trim()
+  .toLowerCase();
+
+    const count =
+      Number(row["Record Count"]) || 0;
+
+    if(!sourceMap[source]) {
+
+      sourceMap[source] = {
+
+        total: 0,
+        qualified: 0,
+        unqualified: 0
+
+      };
+
+    }
+
+    sourceMap[source].total += count;
+
+    if(status === "qualified") {
+
+      sourceMap[source].qualified += count;
+
+    }
+
+    if(status === "unqualified") {
+
+      sourceMap[source].unqualified += count;
+
+    }
+
+  });
+
+  let topSource = "";
+  let topQualified = 0;
+
+  Object.keys(sourceMap).forEach(source => {
+
+    const item = sourceMap[source];
+
+    if(item.qualified > topQualified) {
+
+      topQualified = item.qualified;
+
+      topSource = source;
+
+    }
+
+  });
+
+  if(topSource) {
+
+    insights.push(
+      topSource +
+      " contributes the highest qualified lead volume with " +
+      topQualified +
+      " qualified leads."
+    );
+
+  }
+
+  // =====================================
+  // ADVISOR ANALYSIS
+  // =====================================
+
+  const advisorMap = {};
+
+  advisorData.forEach(row => {
+
+    const advisor = row["Lead Owner"];
+
+    const status = row["Lead Status"];
+
+    const count =
+      Number(row["Record Count"]) || 0;
+
+    if(!advisorMap[advisor]) {
+
+      advisorMap[advisor] = {
+
+        total: 0,
+        active: 0,
+        qualified: 0
+
+      };
+
+    }
+
+    advisorMap[advisor].total += count;
+
+    // ACTIVE
+    if(
+      status === "new" ||
+      status === "working" ||
+      status === "nurturing"
+    ) {
+
+      advisorMap[advisor].active += count;
+
+    }
+
+    // QUALIFIED
+    if(status === "Qualified") {
+
+      advisorMap[advisor].qualified += count;
+
+    }
+
+  });
+
+  let topAdvisor = "";
+  let topAdvisorQualified = 0;
+
+  let backlogAdvisor = "";
+  let backlogCount = 0;
+
+  Object.keys(advisorMap).forEach(advisor => {
+
+    const item = advisorMap[advisor];
+
+    // TOP QUALIFIED
+    if(item.qualified > topAdvisorQualified) {
+
+      topAdvisorQualified =
+        item.qualified;
+
+      topAdvisor = advisor;
+
+    }
+
+    // ACTIVE BACKLOG
+    if(item.active > backlogCount) {
+
+      backlogCount = item.active;
+
+      backlogAdvisor = advisor;
+
+    }
+
+  });
+
+  if(topAdvisor) {
+
+    insights.push(
+      topAdvisor +
+      " has the highest qualified lead count with " +
+      topAdvisorQualified +
+      " qualified leads."
+    );
+
+  }
+
+  if(backlogAdvisor) {
+
+    insights.push(
+      backlogAdvisor +
+      " currently has the highest active lead backlog with " +
+      backlogCount +
+      " active leads."
+    );
+
+  }
+
+  // =====================================
+  // RENDER INSIGHTS
+  // =====================================
+
+  const insightsContainer =
+    document.getElementById("insights");
+
+  insightsContainer.innerHTML = "";
+
+  insights.forEach(insight => {
+
+    const li =
+      document.createElement("li");
+
+    li.innerText = insight;
+
+    insightsContainer.appendChild(li);
+
+  });
+
+}
+
+
+
+function generateInsights_old() {
 
   const insights = [];
 
