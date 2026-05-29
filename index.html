@@ -1,4 +1,4 @@
-
+html
 <!DOCTYPE html>
 <html lang="en">
 
@@ -7,7 +7,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  <title>LSBF Dashboard</title>
+  <title>RevOps Dashboard</title>
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com">
@@ -21,6 +21,73 @@ function restoreSection(id){
  const el=document.getElementById(id);
  if(localStorage.getItem(id)==='true'){ el.classList.add('collapsed'); }
 }
+
+function renderStrategicInsights(){
+ const ul=document.getElementById('insights');
+ if(!ul) return;
+
+ let totalQ=0;
+ const advisorMap={}, sourceMap={};
+
+ advisorData.forEach(r=>{
+   const a=r['Lead Owner']||'';
+   if(typeof EXCLUDED_ADVISORS!=='undefined' && EXCLUDED_ADVISORS.includes(a)) return;
+
+   const status=String(r['Lead Status']||'').toLowerCase().trim();
+   const src=r['Lead Source']||'Unknown';
+   const n=Number(r['Record Count'])||0;
+
+   if(status==='qualified'){
+      totalQ += n;
+
+      if(!advisorMap[a]) advisorMap[a]={qualified:0,sources:new Set(),bySource:{}};
+      advisorMap[a].qualified += n;
+      advisorMap[a].sources.add(src);
+      advisorMap[a].bySource[src]=(advisorMap[a].bySource[src]||0)+n;
+
+      sourceMap[src]=(sourceMap[src]||0)+n;
+   }
+ });
+
+ let topAdvisor='', topQ=0;
+ let diversified='', diversifiedCount=0;
+ let dependent='', depPct=0;
+
+ Object.entries(advisorMap).forEach(([a,m])=>{
+   if(m.qualified>topQ){ topQ=m.qualified; topAdvisor=a; }
+   if(m.sources.size>diversifiedCount){ diversifiedCount=m.sources.size; diversified=a; }
+
+   const maxSrc=Math.max(...Object.values(m.bySource));
+   const pct=m.qualified ? (maxSrc/m.qualified)*100 : 0;
+   if(pct>depPct){ depPct=pct; dependent=a; }
+ });
+
+ let bestSource='', bestSourceQ=0;
+ Object.entries(sourceMap).forEach(([s,v])=>{
+   if(v>bestSourceQ){ bestSourceQ=v; bestSource=s; }
+ });
+
+ const sourceShare = totalQ ? (bestSourceQ/totalQ*100) : 0;
+
+ ul.innerHTML='';
+ const insights = [
+     `📈 ${topAdvisor} contributes ${totalQ ? ((topQ/totalQ)*100).toFixed(1) : 0}% of qualified pipeline.`,
+     `🌐 ${diversified} is the most diversified advisor across ${diversifiedCount} lead sources.`,
+     `🎯 ${dependent} is most dependent on a single source (${depPct.toFixed(1)}% of qualified leads).`,
+     `🚀 ${bestSource} contributes ${sourceShare.toFixed(1)}% of all qualified leads.`
+ ];
+
+ if(sourceShare > 50){
+   insights.push(`⚠️ Concentration Risk: ${bestSource} contributes more than 50% of qualified pipeline.`);
+ }
+
+ insights.forEach(t=>{
+   const li=document.createElement('li');
+   li.innerText=t;
+   ul.appendChild(li);
+ });
+}
+
 </script>
 
   <!-- Chart.js -->
@@ -81,7 +148,7 @@ function restoreSection(id){
   <div class="bg-white rounded-2xl shadow p-6">
 
     <h1 class="text-3xl font-bold">
-      LSBF Lead Intelligence Dashboard
+      RevOps Lead Intelligence Dashboard
     </h1>
 
     <p class="text-gray-500 mt-2">
@@ -280,7 +347,7 @@ function restoreSection(id){
   <div id="insightsSec" class="bg-white rounded-2xl shadow p-6">
 
     <h2 class="text-xl font-semibold mb-4">
-      Auto Generated Insights
+      Strategic Insights
     </h2>
 
     <ul
@@ -520,10 +587,11 @@ console.log(
   renderExecutiveIntelligence();
   renderRiskAlerts();
   renderWorkloadHeatmap();
+  renderStrategicInsights();
 
   renderAdvisorBySchool();
 
-  generateInsights();
+  //generateInsights();
 
 }
 
@@ -1282,6 +1350,102 @@ function renderWorkloadHeatmap(){
  });
  h+='</tbody></table>';
  c.innerHTML=h;
+}
+function renderStrategicInsights(){
+
+ const ul=document.getElementById('insights');
+ if(!ul) return;
+
+ let totalQ=0;
+ const advisorMap={}, sourceMap={};
+
+ advisorData.forEach(r=>{
+
+   const advisor=r['Lead Owner']||'';
+
+   if(
+      EXCLUDED_ADVISORS.includes(advisor) ||
+      advisor.toLowerCase().includes('inactive')
+   ) return;
+
+   const status=(r['Lead Status']||'')
+      .toString()
+      .toLowerCase()
+      .trim();
+
+   const source=r['Lead Source']||'Unknown';
+   const count=Number(r['Record Count'])||0;
+
+   if(status==='qualified'){
+
+      totalQ += count;
+
+      if(!advisorMap[advisor]){
+         advisorMap[advisor]={
+            qualified:0,
+            sources:new Set(),
+            sourceMix:{}
+         };
+      }
+
+      advisorMap[advisor].qualified += count;
+      advisorMap[advisor].sources.add(source);
+
+      advisorMap[advisor].sourceMix[source] =
+         (advisorMap[advisor].sourceMix[source]||0)
+         + count;
+
+      sourceMap[source] =
+         (sourceMap[source]||0)
+         + count;
+   }
+
+ });
+
+ ul.innerHTML='';
+
+ let topAdvisor='';
+ let topQualified=0;
+
+ Object.entries(advisorMap).forEach(([a,m])=>{
+    if(m.qualified>topQualified){
+       topQualified=m.qualified;
+       topAdvisor=a;
+    }
+ });
+
+ let bestSource='';
+ let bestSourceCount=0;
+
+ Object.entries(sourceMap).forEach(([s,v])=>{
+    if(v>bestSourceCount){
+       bestSourceCount=v;
+       bestSource=s;
+    }
+ });
+
+ const insights=[];
+
+ insights.push(
+   `📈 ${topAdvisor} contributes ${((topQualified/totalQ)*100).toFixed(1)}% of qualified pipeline.`
+ );
+
+ insights.push(
+   `🚀 ${bestSource} contributes ${((bestSourceCount/totalQ)*100).toFixed(1)}% of qualified leads.`
+ );
+
+ if(((bestSourceCount/totalQ)*100) > 50){
+    insights.push(
+      `⚠️ Concentration Risk: ${bestSource} contributes more than 50% of qualified pipeline.`
+    );
+ }
+
+ insights.forEach(text=>{
+   const li=document.createElement('li');
+   li.innerText=text;
+   ul.appendChild(li);
+ });
+
 }
 
 // =====================================
