@@ -1,4 +1,4 @@
-html
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -59,31 +59,20 @@ html
       Upload Advisor Report
     </h2>
 
-    <select
-      id="advisorBU"
-      class="border p-2 rounded w-full"
-    >
-
-      <option value="InterActive">
-        InterActive
-      </option>
-
-      <option value="LSBF Professional Qualifications">
-        LSBF Professional Qualifications
-      </option>
-
-      <option value="LSBF Executive Education">
-        LSBF Executive Education
-      </option>
-
-    </select>
-
-    <input
-      type="file"
-      id="advisorFile"
-      multiple
-      class="border p-2 rounded w-full"
-    />
+<div class="grid md:grid-cols-3 gap-4">
+<div>
+<label class="font-semibold">InterActive Advisor Report</label>
+<input type="file" id="interactiveFile" class="border p-2 rounded w-full"/>
+</div>
+<div>
+<label class="font-semibold">PQ Advisor Report</label>
+<input type="file" id="pqFile" class="border p-2 rounded w-full"/>
+</div>
+<div>
+<label class="font-semibold">Executive Advisor Report</label>
+<input type="file" id="executiveFile" class="border p-2 rounded w-full"/>
+</div>
+</div>
 
   </div>
 
@@ -177,6 +166,26 @@ html
 
   </div>
 
+  
+  <!-- SCHOOL COMPARISON -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-xl font-semibold mb-4">School Comparison</h2>
+    <div id="advisorCoverage">Phase A placeholder</div>
+  </div>
+
+  <!-- ADVISOR LEADERBOARD -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-xl font-semibold mb-4">Advisor Leaderboard</h2>
+    <div id="advisorLeaderboard">Phase A placeholder</div>
+  </div>
+
+  <!-- ADVISOR PERFORMANCE -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-xl font-semibold mb-4">Advisor Performance by School</h2>
+    <div id="advisorBySchool">Phase A placeholder</div>
+  </div>
+
+
   <!-- INSIGHTS -->
   <div class="bg-white rounded-2xl shadow p-6">
 
@@ -201,6 +210,12 @@ let advisorData = [];
 let sourceChart = null;
 let advisorChart = null;
 
+const EXCLUDED_ADVISORS = [
+  "Sales Queue",
+  "Playbooks Integration User",
+  "Marketing Queue-LSBF UK"
+];
+
 // =====================================
 // EVENT LISTENERS
 // =====================================
@@ -209,9 +224,20 @@ document
   .getElementById("sourceFile")
   .addEventListener("change", handleSourceUpload);
 
-document
-  .getElementById("advisorFile")
-  .addEventListener("change", handleAdvisorUpload);
+
+let interactiveData = [];
+let pqData = [];
+let executiveData = [];
+
+document.getElementById("interactiveFile")
+  .addEventListener("change", (event) => handleAdvisorUpload(event,"InterActive"));
+
+document.getElementById("pqFile")
+  .addEventListener("change", (event) => handleAdvisorUpload(event,"LSBF Professional Qualifications"));
+
+document.getElementById("executiveFile")
+  .addEventListener("change", (event) => handleAdvisorUpload(event,"LSBF Executive Education"));
+
 
 // =====================================
 // SOURCE FILE HANDLER
@@ -282,16 +308,17 @@ function handleSourceUpload(event) {
 // ADVISOR FILE HANDLER
 // =====================================
 
-function handleAdvisorUpload(event) {
+function handleAdvisorUpload(event, selectedBU) {
 
   const files = event.target.files;
 
   if(!files.length) return;
 
-  const selectedBU =
-    document.getElementById("advisorBU").value;
 
-  advisorData = [];
+  if(selectedBU === "InterActive") interactiveData = [];
+  if(selectedBU === "LSBF Professional Qualifications") pqData = [];
+  if(selectedBU === "LSBF Executive Education") executiveData = [];
+
 
   Array.from(files).forEach(file => {
 
@@ -342,9 +369,23 @@ function handleAdvisorUpload(event) {
 
       });
 
+
+      if(selectedBU === "InterActive") {
+        interactiveData = [...interactiveData, ...parsedData];
+      }
+
+      if(selectedBU === "LSBF Professional Qualifications") {
+        pqData = [...pqData, ...parsedData];
+      }
+
+      if(selectedBU === "LSBF Executive Education") {
+        executiveData = [...executiveData, ...parsedData];
+      }
+
       advisorData = [
-        ...advisorData,
-        ...parsedData
+        ...interactiveData,
+        ...pqData,
+        ...executiveData
       ];
 
       calculateDashboard();
@@ -370,6 +411,21 @@ function calculateDashboard() {
   renderSourceTable();
 
   renderAdvisorChart();
+
+  renderAdvisorCoverage();
+
+console.log(
+  "Advisor BU Count",
+  advisorData.reduce((acc,row)=>{
+    const bu=row["Business Unit"] || "Unknown";
+    acc[bu]=(acc[bu]||0)+1;
+    return acc;
+  },{})
+);
+
+  renderAdvisorLeaderboard();
+
+  renderAdvisorBySchool();
 
   generateInsights();
 
@@ -764,95 +820,223 @@ function renderSourceTable() {
 // ADVISOR CHART
 // =====================================
 
+
 function renderAdvisorChart() {
 
   const advisorMap = {};
 
   advisorData.forEach(row => {
 
-    const advisor = row["Lead Owner"];
+    const advisor = row["Lead Owner"] || "";
 
-    const status = row["Lead Status"];
+    if(EXCLUDED_ADVISORS.includes(advisor)) return;
 
-    const count =
-      Number(row["Record Count"]) || 0;
+    const status = String(row["Lead Status"] || "").trim().toLowerCase();
+    const count = Number(row["Record Count"]) || 0;
 
     if(!advisorMap[advisor]) {
-
-      advisorMap[advisor] = {
-
-        total: 0,
-        qualified: 0
-
-      };
-
+      advisorMap[advisor] = { total: 0, qualified: 0 };
     }
 
     advisorMap[advisor].total += count;
 
-    if(status === "Qualified") {
-
+    if(status === "qualified") {
       advisorMap[advisor].qualified += count;
-
     }
-
   });
 
-  const labels = [];
-  const values = [];
+  const rows = Object.entries(advisorMap)
+    .map(([advisor,item])=>({
+      advisor,
+      total:item.total,
+      qualification:item.total ? (item.qualified/item.total)*100 : 0
+    }))
+    .filter(x => x.total >= 25)
+    .sort((a,b)=>b.qualification-a.qualification);
 
-  Object.keys(advisorMap).forEach(advisor => {
+  const labels = rows.map(x=>x.advisor);
+  const values = rows.map(x=>x.qualification.toFixed(1));
 
-    const item = advisorMap[advisor];
+  const ctx = document.getElementById("advisorChart");
 
-    const qualification =
-      item.total > 0
-        ? (
-            (item.qualified / item.total)
-            * 100
-          ).toFixed(1)
-        : 0;
-
-    labels.push(advisor);
-
-    values.push(qualification);
-
-  });
-
-  const ctx =
-    document.getElementById("advisorChart");
-
-  if(advisorChart) {
-    advisorChart.destroy();
-  }
+  if(advisorChart) advisorChart.destroy();
 
   advisorChart = new Chart(ctx, {
-
-    type: 'bar',
-
-    data: {
-
-      labels: labels,
-
-      datasets: [
-
-        {
-          label: 'Qualification %',
-          data: values
-        }
-
-      ]
-
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{label:'Qualification %',data:values}]
     },
+    options:{responsive:true}
+  });
+}
 
-    options: {
+function renderSchoolComparison() {
 
-      responsive: true
+  const container = document.getElementById("schoolComparison");
+  if(!container) return;
 
-    }
+  const map = {};
 
+  advisorData.forEach(row => {
+    const bu = row["Business Unit"] || "Unknown";
+    const status = String(row["Lead Status"] || "").trim().toLowerCase();
+    const count = Number(row["Record Count"]) || 0;
+
+    if(!map[bu]) map[bu] = {leads:0,active:0,qualified:0};
+
+    map[bu].leads += count;
+
+    if(["new","working","nurturing"].includes(status)) map[bu].active += count;
+    if(status === "qualified") map[bu].qualified += count;
   });
 
+  let html = '<table class="min-w-full border"><thead><tr><th class="border p-2">School</th><th class="border p-2">Leads</th><th class="border p-2">Active</th><th class="border p-2">Qualified</th><th class="border p-2">Qual %</th></tr></thead><tbody>';
+
+  Object.keys(map).forEach(bu=>{
+    const m=map[bu];
+    const qp=m.leads?((m.qualified/m.leads)*100).toFixed(1):0;
+    html += `<tr><td class="border p-2">${bu}</td><td class="border p-2">${m.leads}</td><td class="border p-2">${m.active}</td><td class="border p-2">${m.qualified}</td><td class="border p-2">${qp}%</td></tr>`;
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+
+
+function renderAdvisorCoverage() {
+ const container=document.getElementById("advisorCoverage");
+ if(!container) return;
+ const map={};
+
+ advisorData.forEach(row=>{
+   const bu=row["Business Unit"]||"Unknown";
+   const advisor=row["Lead Owner"]||"";
+   const count=Number(row["Record Count"])||0;
+   const status=String(row["Lead Status"]||"").trim().toLowerCase();
+
+   if(EXCLUDED_ADVISORS.includes(advisor)) return;
+
+   if(!map[bu]) map[bu]={leads:0,qualified:0,advisors:new Set()};
+
+   map[bu].leads+=count;
+   if(status==="qualified") map[bu].qualified+=count;
+
+   if(count>0) map[bu].advisors.add(advisor);
+ });
+
+ let h='<table class="min-w-full border"><thead><tr><th class="border p-2">School</th><th class="border p-2">Advisors</th><th class="border p-2">Leads</th><th class="border p-2">Avg Leads/Advisor</th><th class="border p-2">Qualified</th></tr></thead><tbody>';
+ Object.keys(map).forEach(b=>{
+   let m=map[b];
+   let a=m.advisors.size||1;
+   h+=`<tr><td class="border p-2">${b}</td><td class="border p-2">${a}</td><td class="border p-2">${m.leads}</td><td class="border p-2">${(m.leads/a).toFixed(1)}</td><td class="border p-2">${m.qualified}</td></tr>`;
+ });
+ h+='</tbody></table>';
+ container.innerHTML=h;
+}
+
+
+function renderAdvisorLeaderboard() {
+
+ const c=document.getElementById("advisorLeaderboard");
+ if(!c) return;
+
+ const map={};
+ let totalQualified=0;
+
+ advisorData.forEach(row=>{
+
+  const advisor=row["Lead Owner"]||"";
+  if(EXCLUDED_ADVISORS.includes(advisor)) return;
+
+  const bu=row["Business Unit"]||"";
+  const status=String(row["Lead Status"]||"").trim().toLowerCase();
+  const count=Number(row["Record Count"])||0;
+
+  if(!map[advisor]){
+    map[advisor]={
+      leads:0,
+      active:0,
+      qualified:0,
+      unqualified:0,
+      businessUnits:new Set()
+    };
+  }
+
+  map[advisor].businessUnits.add(bu);
+  map[advisor].leads+=count;
+
+  if(["new","working","nurturing"].includes(status)) map[advisor].active+=count;
+  if(status==="qualified"){ map[advisor].qualified+=count; totalQualified+=count; }
+  if(status==="unqualified") map[advisor].unqualified+=count;
+ });
+
+ const rows=Object.entries(map)
+ .map(([advisor,m])=>({
+   advisor,
+   buCount:m.businessUnits.size,
+   leads:m.leads,
+   active:m.active,
+   qualified:m.qualified,
+   unqualified:m.unqualified,
+   qp:m.leads?(m.qualified/m.leads*100):0,
+   share:totalQualified?(m.qualified/totalQualified*100):0
+ }))
+ .sort((a,b)=>b.qualified-a.qualified||b.qp-a.qp);
+
+ let h='<table class="min-w-full border"><thead><tr><th class="border p-2">Rank</th><th class="border p-2">Advisor</th><th class="border p-2">BU Count</th><th class="border p-2">Leads</th><th class="border p-2">Active</th><th class="border p-2">Qualified</th><th class="border p-2">Unqualified</th><th class="border p-2">Qual %</th><th class="border p-2">Qualified Share %</th></tr></thead><tbody>';
+
+ rows.forEach((r,i)=>{
+ h+=`<tr><td class="border p-2">${i+1}</td><td class="border p-2">${r.advisor}</td><td class="border p-2">${r.buCount}</td><td class="border p-2">${r.leads}</td><td class="border p-2">${r.active}</td><td class="border p-2">${r.qualified}</td><td class="border p-2">${r.unqualified}</td><td class="border p-2">${r.qp.toFixed(1)}%</td><td class="border p-2">${r.share.toFixed(1)}%</td></tr>`;
+ });
+
+ h+='</tbody></table>';
+ c.innerHTML=h;
+}
+
+
+function renderAdvisorBySchool() {
+ const c=document.getElementById("advisorBySchool");
+ if(!c) return;
+
+ const schools=["InterActive","LSBF Professional Qualifications","LSBF Executive Education"];
+ let html='';
+
+ schools.forEach(school=>{
+  const map={};
+
+  advisorData.forEach(row=>{
+   if((row["Business Unit"]||"")!==school) return;
+
+   const advisor=row["Lead Owner"]||"";
+   if(EXCLUDED_ADVISORS.includes(advisor)) return;
+
+   const status=String(row["Lead Status"]||"").trim().toLowerCase();
+   const count=Number(row["Record Count"])||0;
+
+   if(!map[advisor]) map[advisor]={leads:0,active:0,qualified:0};
+
+   map[advisor].leads+=count;
+   if(["new","working","nurturing"].includes(status)) map[advisor].active+=count;
+   if(status==="qualified") map[advisor].qualified+=count;
+  });
+
+  const advisors=Object.entries(map).map(([advisor,m])=>({
+   advisor,...m,qp:m.leads?(m.qualified/m.leads*100):0
+  })).sort((a,b)=>b.qualified-a.qualified||b.qp-a.qp);
+
+  html+=`<h3 class="text-lg font-bold mt-4 mb-2">${school}</h3>`;
+  html+='<table class="min-w-full border mb-4"><thead><tr><th class="border p-2">Rank</th><th class="border p-2">Advisor</th><th class="border p-2">Leads</th><th class="border p-2">Active</th><th class="border p-2">Qualified</th><th class="border p-2">Qual %</th></tr></thead><tbody>';
+
+  advisors.forEach((a,i)=>{
+   html+=`<tr><td class="border p-2">${i+1}</td><td class="border p-2">${a.advisor}</td><td class="border p-2">${a.leads}</td><td class="border p-2">${a.active}</td><td class="border p-2">${a.qualified}</td><td class="border p-2">${a.qp.toFixed(1)}%</td></tr>`;
+  });
+
+  html+='</tbody></table>';
+ });
+
+ c.innerHTML=html;
 }
 
 // =====================================
