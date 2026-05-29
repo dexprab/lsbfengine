@@ -53,7 +53,7 @@ function restoreSection(id){
 
 
 <style>
-.sticky-nav{position:sticky;top:0;z-index:100;background:#fff;padding:10px;border-radius:12px}
+.sticky-nav{position:fixed;top:0;left:0;right:0;z-index:9999;background:#fff;padding:10px;border-bottom:1px solid #ddd}
 .section-content.collapsed{display:none}
 .toggle-header{cursor:pointer;font-weight:700;font-size:1.25rem;margin-bottom:12px}
 .school-content.collapsed{display:none}
@@ -61,14 +61,19 @@ function restoreSection(id){
 </style>
 </head>
 
-<body class="bg-gray-100 min-h-screen p-6">
+<body class="bg-gray-100 min-h-screen p-6" style="padding-top:80px;">
 
 <div class="max-w-7xl mx-auto space-y-6">
 <div class="sticky-nav shadow">
 <a href="#kpi">BU Summary</a> |
 <a href="#sources">Sources</a> |
+<a href="#coverage">Coverage</a> |
 <a href="#leaderboard">Leaderboard</a> |
+<a href="#matrix">Matrix</a> |
 <a href="#schools">Schools</a> |
+<a href="#executive">Executive</a> |
+<a href="#risks">Risks</a> |
+<a href="#workload">Workload</a> |
 <a href="#insightsSec">Insights</a>
 </div>
 
@@ -223,7 +228,7 @@ function restoreSection(id){
 
   
   <!-- ADVISOR SOURCE MATRIX -->
-  <div class="bg-white rounded-2xl shadow p-6">
+  <div id="matrix" class="bg-white rounded-2xl shadow p-6">
     <div class="toggle-header" onclick="toggleSection('sec_matrix')">▼ Advisor × Source Matrix</div>
     <div id="sec_matrix" class="section-content">
       <div class="mb-4">
@@ -246,7 +251,32 @@ function restoreSection(id){
   </div>
 
 
-  <!-- INSIGHTS -->
+  
+  <!-- EXECUTIVE INTELLIGENCE -->
+  <div id="executive" class="bg-white rounded-2xl shadow p-6">
+    <div class="toggle-header" onclick="toggleSection('sec_execintel')">▼ Executive Intelligence</div>
+    <div id="sec_execintel" class="section-content">
+      <div id="executiveCards" class="grid md:grid-cols-3 gap-4"></div>
+    </div>
+  </div>
+
+  <!-- RISK ALERTS -->
+  <div id="risks" class="bg-white rounded-2xl shadow p-6">
+    <div class="toggle-header" onclick="toggleSection('sec_risks')">▼ Risk Alerts</div>
+    <div id="sec_risks" class="section-content">
+      <ul id="riskAlerts" class="list-disc pl-5"></ul>
+    </div>
+  </div>
+
+  <!-- WORKLOAD HEATMAP -->
+  <div id="workload" class="bg-white rounded-2xl shadow p-6">
+    <div class="toggle-header" onclick="toggleSection('sec_workload')">▼ Advisor Workload Heatmap</div>
+    <div id="sec_workload" class="section-content">
+      <div id="workloadHeatmap"></div>
+    </div>
+  </div>
+
+<!-- INSIGHTS -->
   <div id="insightsSec" class="bg-white rounded-2xl shadow p-6">
 
     <h2 class="text-xl font-semibold mb-4">
@@ -486,6 +516,10 @@ console.log(
   renderAdvisorLeaderboard();
 
   renderAdvisorSourceMatrix();
+
+  renderExecutiveIntelligence();
+  renderRiskAlerts();
+  renderWorkloadHeatmap();
 
   renderAdvisorBySchool();
 
@@ -1168,6 +1202,86 @@ function renderAdvisorSourceMatrix(){
  h+='</tbody></table></div>';
 
  container.innerHTML=h;
+}
+
+
+function renderExecutiveIntelligence(){
+ const c=document.getElementById('executiveCards'); if(!c) return;
+
+ let totalQ=0, topA='', topQ=0, sourceMap={};
+ const adv={};
+
+ advisorData.forEach(r=>{
+   const a=r['Lead Owner']||'';
+   if(EXCLUDED_ADVISORS.includes(a)) return;
+   const s=(r['Lead Status']||'').toString().toLowerCase().trim();
+   const src=r['Lead Source']||'Unknown';
+   const n=Number(r['Record Count'])||0;
+
+   if(s==='qualified'){
+      totalQ+=n;
+      sourceMap[src]=(sourceMap[src]||0)+n;
+      adv[a]=(adv[a]||0)+n;
+   }
+ });
+
+ Object.entries(adv).forEach(([a,v])=>{ if(v>topQ){topQ=v; topA=a;} });
+ let topSource='', topSourceQ=0;
+ Object.entries(sourceMap).forEach(([s,v])=>{ if(v>topSourceQ){topSourceQ=v; topSource=s;} });
+
+ c.innerHTML=`
+ <div class="border p-4 rounded"><b>Total Qualified</b><br>${totalQ}</div>
+ <div class="border p-4 rounded"><b>Top Advisor</b><br>${topA}</div>
+ <div class="border p-4 rounded"><b>Best Source</b><br>${topSource}</div>
+ <div class="border p-4 rounded"><b>Advisor Share</b><br>${totalQ?((topQ/totalQ)*100).toFixed(1):0}%</div>
+ <div class="border p-4 rounded"><b>Source Share</b><br>${totalQ?((topSourceQ/totalQ)*100).toFixed(1):0}%</div>`;
+}
+
+function renderRiskAlerts(){
+ const c=document.getElementById('riskAlerts'); if(!c) return;
+ let alerts=[];
+
+ const src={}; let total=0;
+ sourceData.forEach(r=>{
+   const s=(r['Lead Status']||'').toString().toLowerCase().trim();
+   const srcName=r['Lead Source']||'Unknown';
+   const n=Number(r['Record Count'])||0;
+   if(s==='qualified'){ src[srcName]=(src[srcName]||0)+n; total+=n; }
+ });
+
+ Object.entries(src).forEach(([k,v])=>{
+   const pct=total?(v/total*100):0;
+   if(pct>50) alerts.push(`⚠ ${k} contributes ${pct.toFixed(1)}% of qualified pipeline.`);
+ });
+
+ c.innerHTML=alerts.length?alerts.map(x=>`<li>${x}</li>`).join(''):'<li>No major concentration risks detected.</li>';
+}
+
+function renderWorkloadHeatmap(){
+ const c=document.getElementById('workloadHeatmap'); if(!c) return;
+ const map={};
+
+ advisorData.forEach(r=>{
+   const a=r['Lead Owner']||'';
+   if(EXCLUDED_ADVISORS.includes(a)) return;
+   const s=(r['Lead Status']||'').toString().toLowerCase().trim();
+   const n=Number(r['Record Count'])||0;
+
+   if(!map[a]) map[a]={leads:0,active:0,qualified:0};
+   map[a].leads+=n;
+   if(['new','working','nurturing'].includes(s)) map[a].active+=n;
+   if(s==='qualified') map[a].qualified+=n;
+ });
+
+ let h='<table class="min-w-full border"><thead><tr><th class="border p-2">Advisor</th><th class="border p-2">Leads</th><th class="border p-2">Active</th><th class="border p-2">Qualified</th><th class="border p-2">Risk</th></tr></thead><tbody>';
+ Object.entries(map).forEach(([a,m])=>{
+   let risk='🟢';
+   if(m.active>150) risk='🔴';
+   else if(m.active>=100) risk='🟠';
+   h+=`<tr><td class="border p-2">${a}</td><td class="border p-2">${m.leads}</td><td class="border p-2">${m.active}</td><td class="border p-2">${m.qualified}</td><td class="border p-2">${risk}</td></tr>`;
+ });
+ h+='</tbody></table>';
+ c.innerHTML=h;
 }
 
 // =====================================
