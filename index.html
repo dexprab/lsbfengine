@@ -1,4 +1,4 @@
-3.1.3
+3.1.4
 <!DOCTYPE html>
 <html lang="en">
 
@@ -201,46 +201,17 @@ Select RevOps Root Folder
 </div>
 </div>
 
-<!-- SOURCE REPORT -->
-  <div class="bg-white rounded-2xl shadow p-6 space-y-4">
-
-    <h2 class="text-xl font-semibold">
-      Upload Source Summary Report
-    </h2>
-
-    <input
-      type="file"
-      id="sourceFile"
-      class="border p-2 rounded w-full"
-    />
-
-  </div>
-
-  <!-- ADVISOR REPORT -->
-  <div class="bg-white rounded-2xl shadow p-6 space-y-4">
-
-    <h2 class="text-xl font-semibold">
-      Upload Advisor Report
-    </h2>
-
-<div class="grid md:grid-cols-3 gap-4">
-<div>
-<label class="font-semibold">InterActive Advisor Report</label>
-<input type="file" id="interactiveFile" class="border p-2 rounded w-full"/>
-</div>
-<div>
-<label class="font-semibold">PQ Advisor Report</label>
-<input type="file" id="pqFile" class="border p-2 rounded w-full"/>
-</div>
-<div>
-<label class="font-semibold">Executive Advisor Report</label>
-<input type="file" id="executiveFile" class="border p-2 rounded w-full"/>
-</div>
-</div>
-
-  </div>
+<!-- Legacy Upload Removed -->
+  
 
   
+
+
+<div id="dataSourcePanel" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-3">🗄 Data Source</h2>
+<div id="dataSourceInfo">Mode: GITHUB | Status: Ready</div>
+<div id="dataHealth" class="mt-4"></div>
+</div>
 
 <div id="guide" class="bg-blue-50 rounded-2xl shadow p-6">
 <h2 class="text-2xl font-bold mb-4">📘 RevOps Framework Guide</h2>
@@ -2161,7 +2132,7 @@ async function initializeGitHubMode(){
    const cfg = await res.json();
 
    selector.innerHTML='';
-   registry.innerHTML='<b>GitHub Data Mode</b><br>';
+   registry.innerHTML='<b>GitHub Data Mode</b><br>'; document.getElementById("dataSourceInfo").innerHTML=`Mode: ${APP_CONFIG.MODE} | Default Quarter: ${APP_CONFIG.DEFAULT_QUARTER}`;
 
    cfg.quarters.forEach(q=>{
       selector.innerHTML += `<option value="${q}">${q}</option>`;
@@ -2169,12 +2140,23 @@ async function initializeGitHubMode(){
    });
 
    selector.value = APP_CONFIG.DEFAULT_QUARTER || cfg.quarters[0];
-   loadSelectedQuarterGitHub();
+   renderDataHealth(cfg); loadSelectedQuarterGitHub();
 
  }catch(err){
    registry.innerHTML='❌ Unable to load quarters.json';
    console.error(err);
  }
+}
+
+
+function renderDataHealth(cfg){
+ const el=document.getElementById('dataHealth');
+ if(!el) return;
+ let h='<h3><b>Data Health</b></h3>';
+ cfg.quarters.forEach(q=>{
+   h += `<div>✅ ${q}</div>`;
+ });
+ el.innerHTML=h;
 }
 
 async function fetchExcelFile(url){
