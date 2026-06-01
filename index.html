@@ -141,20 +141,16 @@ function toggleHelp(id){
 
 </head>
 
-<body class="bg-gray-100 min-h-screen p-6" style="padding-top:80px;">
+<body class="bg-gray-100 min-h-screen p-6" style="padding-top:110px;">
 
 <div class="max-w-7xl mx-auto space-y-6">
 <div class="sticky-nav shadow">
-<a href="#kpi">BU Summary</a> |
-<a href="#sources">Sources</a> |
-<a href="#coverage">Coverage</a> |
-<a href="#leaderboard">Leaderboard</a> |
-<a href="#matrix">Matrix</a> | <a href="#sourceeff">Source Efficiency</a> | <a href="#adveff">Advisor Effectiveness</a> | <a href="#quadrants">Quadrants</a> |
-<a href="#schools">Schools</a> |
-<a href="#executive">Executive</a> |
-<a href="#risks">Risks</a> |
-<a href="#workload">Workload</a> |
-<a href="#insightsSec">Insights</a>
+<a href="#guide">📘 Guide</a> |
+<a href="#executiveSummarySection">📊 Executive</a> |
+<a href="#sourceeff">📈 Lead Quality</a> |
+<a href="#adveff">🏆 Advisors</a> |
+<a href="#executive">⚙ Operations</a> |
+<a href="#insightsSec">💡 Insights</a>
 </div>
 
   <!-- HEADER -->
@@ -170,7 +166,19 @@ function toggleHelp(id){
 
   </div>
 
-  <!-- SOURCE REPORT -->
+  
+<div class="bg-green-50 rounded-2xl shadow p-6 space-y-4">
+<h2 class="text-xl font-semibold">📁 Quarter Folder Loader (v3.0)</h2>
+<p>Select a folder containing:
+source_summary.xlsx, interactive_advisor.xlsx, pq_advisor.xlsx, executive_advisor.xlsx</p>
+<button onclick="loadQuarterFolder()" class="bg-green-600 text-white px-4 py-2 rounded">
+Select Quarter Folder
+</button>
+<div id="folderStatus" class="text-sm mt-2"></div>
+</div>
+
+
+<!-- SOURCE REPORT -->
   <div class="bg-white rounded-2xl shadow p-6 space-y-4">
 
     <h2 class="text-xl font-semibold">
@@ -210,8 +218,9 @@ function toggleHelp(id){
   </div>
 
   
-<div id="executiveSummarySection" class="bg-white rounded-2xl shadow p-6">
 
+<div id="guide" class="bg-blue-50 rounded-2xl shadow p-6">
+<h2 class="text-2xl font-bold mb-4">📘 RevOps Framework Guide</h2>
 <div class="help-box">
 <div class="help-title" onclick="toggleHelp('v28help')">ℹ Understanding the RevOps Decision Engine</div>
 <div id="v28help" class="help-content" style="display:none">
@@ -222,6 +231,11 @@ function toggleHelp(id){
 <b>Executive Diagnosis</b>: Determines whether the primary bottleneck is lead quality, advisor performance, or both.
 </div>
 </div>
+</div>
+
+<div id="executiveSummarySection" class="bg-white rounded-2xl shadow p-6">
+
+
 
 <h2 class="text-xl font-semibold mb-4">Executive Summary</h2>
 <div id="executiveSummary" class="grid md:grid-cols-4 gap-4"></div>
@@ -1933,6 +1947,88 @@ function renderExecutiveDiagnosis(){
  if(hidden>coaching) msg='Lead quality is the primary constraint.';
  if(coaching>hidden) msg='Advisor effectiveness is the primary constraint.';
  c.innerHTML='<div class="p-4 border rounded"><b>'+msg+'</b><br>Hidden Gems: '+hidden+' | Coaching Opportunities: '+coaching+'</div>';
+}
+
+
+async function loadQuarterFolder(){
+ try{
+   const dirHandle = await window.showDirectoryPicker();
+   const files = {};
+   const status = document.getElementById('folderStatus');
+
+   for await (const entry of dirHandle.values()){
+      if(entry.kind !== 'file') continue;
+      const name = entry.name.toLowerCase();
+
+      if(name.includes('source')) files.source = await entry.getFile();
+      else if(name.includes('interactive')) files.interactive = await entry.getFile();
+      else if(name.includes('pq')) files.pq = await entry.getFile();
+      else if(name.includes('executive')) files.executive = await entry.getFile();
+   }
+
+   let msg=[];
+   ['source','interactive','pq','executive'].forEach(k=>{
+      msg.push(files[k] ? '✅ '+k : '❌ '+k);
+   });
+   status.innerHTML = msg.join('<br>');
+
+   if(files.source) loadSourceFile(files.source);
+   if(files.interactive) loadAdvisorFile(files.interactive,'InterActive');
+   if(files.pq) loadAdvisorFile(files.pq,'LSBF Professional Qualifications');
+   if(files.executive) loadAdvisorFile(files.executive,'LSBF Executive Education');
+
+ }catch(err){
+   console.error(err);
+ }
+}
+
+function loadSourceFile(file){
+ const reader=new FileReader();
+ reader.onload=function(e){
+   const data=new Uint8Array(e.target.result);
+   const workbook=XLSX.read(data,{type:'array'});
+   const sheet=workbook.Sheets[workbook.SheetNames[0]];
+   let parsedData=XLSX.utils.sheet_to_json(sheet);
+
+   let currentBU='',currentStatus='',currentSource='';
+   parsedData=parsedData.map(row=>{
+      if(row['Business Unit']) currentBU=row['Business Unit']; else row['Business Unit']=currentBU;
+      if(row['Lead Status']) currentStatus=row['Lead Status']; else row['Lead Status']=currentStatus;
+      if(row['Lead Source']) currentSource=row['Lead Source']; else row['Lead Source']=currentSource;
+      return row;
+   });
+
+   sourceData=parsedData;
+   calculateDashboard();
+ };
+ reader.readAsArrayBuffer(file);
+}
+
+function loadAdvisorFile(file,selectedBU){
+ const reader=new FileReader();
+ reader.onload=function(e){
+   const data=new Uint8Array(e.target.result);
+   const workbook=XLSX.read(data,{type:'array'});
+   const sheet=workbook.Sheets[workbook.SheetNames[0]];
+   let parsedData=XLSX.utils.sheet_to_json(sheet);
+
+   let currentAdvisor='',currentSource='',currentStatus='';
+   parsedData=parsedData.map(row=>{
+      row['Business Unit']=selectedBU;
+      if(row['Lead Owner']) currentAdvisor=row['Lead Owner']; else row['Lead Owner']=currentAdvisor;
+      if(row['Lead Source']) currentSource=row['Lead Source']; else row['Lead Source']=currentSource;
+      if(row['Lead Status']) currentStatus=row['Lead Status']; else row['Lead Status']=currentStatus;
+      return row;
+   });
+
+   if(selectedBU==='InterActive') interactiveData=parsedData;
+   if(selectedBU==='LSBF Professional Qualifications') pqData=parsedData;
+   if(selectedBU==='LSBF Executive Education') executiveData=parsedData;
+
+   advisorData=[...interactiveData,...pqData,...executiveData];
+   calculateDashboard();
+ };
+ reader.readAsArrayBuffer(file);
 }
 
 </script>
