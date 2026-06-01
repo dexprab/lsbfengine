@@ -1,4 +1,4 @@
-html
+3.1.3
 <!DOCTYPE html>
 <html lang="en">
 
@@ -2201,33 +2201,50 @@ async function loadSelectedQuarterGitHub(){
       loadAdvisorArrayBuffer(files.interactive,'InterActive');
       loadAdvisorArrayBuffer(files.pq,'LSBF Professional Qualifications');
       loadAdvisorArrayBuffer(files.executive,'LSBF Executive Education');
+   calculateDashboard();
    }
  }catch(err){
    console.error(err);
  }
 }
 
+
 function loadSourceArrayBuffer(buffer){
  const workbook=XLSX.read(new Uint8Array(buffer),{type:'array'});
  const sheet=workbook.Sheets[workbook.SheetNames[0]];
- sourceData=XLSX.utils.sheet_to_json(sheet);
- calculateDashboard();
+ let parsedData=XLSX.utils.sheet_to_json(sheet);
+
+ let currentBU='',currentStatus='',currentSource='';
+ parsedData=parsedData.map(row=>{
+   if(row['Business Unit']) currentBU=row['Business Unit']; else row['Business Unit']=currentBU;
+   if(row['Lead Status']) currentStatus=row['Lead Status']; else row['Lead Status']=currentStatus;
+   if(row['Lead Source']) currentSource=row['Lead Source']; else row['Lead Source']=currentSource;
+   return row;
+ });
+
+ sourceData=parsedData;
 }
 
 function loadAdvisorArrayBuffer(buffer,bu){
  const workbook=XLSX.read(new Uint8Array(buffer),{type:'array'});
  const sheet=workbook.Sheets[workbook.SheetNames[0]];
- let data=XLSX.utils.sheet_to_json(sheet);
- data.forEach(r=>r['Business Unit']=bu);
+ let parsedData=XLSX.utils.sheet_to_json(sheet);
 
- if(bu==='InterActive') interactiveData=data;
- if(bu==='LSBF Professional Qualifications') pqData=data;
- if(bu==='LSBF Executive Education') executiveData=data;
+ let currentAdvisor='',currentSource='',currentStatus='';
+ parsedData=parsedData.map(row=>{
+   row['Business Unit']=bu;
+   if(row['Lead Owner']) currentAdvisor=row['Lead Owner']; else row['Lead Owner']=currentAdvisor;
+   if(row['Lead Source']) currentSource=row['Lead Source']; else row['Lead Source']=currentSource;
+   if(row['Lead Status']) currentStatus=row['Lead Status']; else row['Lead Status']=currentStatus;
+   return row;
+ });
+
+ if(bu==='InterActive') interactiveData=parsedData;
+ if(bu==='LSBF Professional Qualifications') pqData=parsedData;
+ if(bu==='LSBF Executive Education') executiveData=parsedData;
 
  advisorData=[...(interactiveData||[]),...(pqData||[]),...(executiveData||[])];
- calculateDashboard();
 }
-
 </script>
 </body>
 </html>
