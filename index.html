@@ -1,4 +1,4 @@
-3.1.5c
+3.2.F
 <!DOCTYPE html>
 <html lang="en">
 
@@ -280,6 +280,12 @@ Select RevOps Root Folder
 
 <h2 class="text-xl font-semibold mb-4">Executive Summary</h2>
 <div id="executiveSummary" class="grid md:grid-cols-4 gap-4"></div>
+</div>
+
+
+<div id="businessTrends" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">📈 Business Trends</h2>
+<div id="businessTrendsContent">Load RevOps Root Folder to build trends.</div>
 </div>
 
 <!-- KPI TABLE -->
@@ -2076,6 +2082,89 @@ function loadAdvisorFile(file,selectedBU){
 
 let allQuarterData = {};
 let selectedRootHandle = null;
+let quarterMetrics = {};
+
+
+
+async function buildQuarterMetrics(){
+ quarterMetrics={};
+
+ for(const qName of Object.keys(allQuarterData)){
+   try{
+     const dirHandle=allQuarterData[qName].handle;
+     let sourceFile=null;
+
+     for await(const entry of dirHandle.values()){
+       if(entry.kind!=='file') continue;
+       if(entry.name.toLowerCase().includes('source')){
+         sourceFile=await entry.getFile();
+         break;
+       }
+     }
+
+     if(!sourceFile) continue;
+
+     const buffer=await sourceFile.arrayBuffer();
+     const workbook=XLSX.read(new Uint8Array(buffer),{type:'array'});
+     const sheet=workbook.Sheets[workbook.SheetNames[0]];
+     let rows=XLSX.utils.sheet_to_json(sheet);
+
+     let currentBU='',currentStatus='',currentSource='';
+     rows=rows.map(r=>{
+       if(r['Business Unit']) currentBU=r['Business Unit']; else r['Business Unit']=currentBU;
+       if(r['Lead Status']) currentStatus=r['Lead Status']; else r['Lead Status']=currentStatus;
+       if(r['Lead Source']) currentSource=r['Lead Source']; else r['Lead Source']=currentSource;
+       return r;
+     });
+
+     let leads=0, qualified=0;
+
+     rows.forEach(r=>{
+       const n=Number(r['Record Count'])||0;
+       leads+=n;
+       if(String(r['Lead Status']||'').toLowerCase().trim()==='qualified'){
+         qualified+=n;
+       }
+     });
+
+     quarterMetrics[qName]={
+       leads,
+       qualified,
+       qualificationPct: leads ? (qualified/leads*100) : 0
+     };
+   }catch(e){
+     console.error('Trend metric error',qName,e);
+   }
+ }
+
+ renderBusinessTrends();
+}
+
+function renderBusinessTrends(){
+ const el=document.getElementById('businessTrendsContent');
+ if(!el) return;
+
+ const quarters=Object.keys(quarterMetrics).sort();
+ if(!quarters.length){
+   el.innerHTML='No trend data available';
+   return;
+ }
+
+ let html='<table class="min-w-full border"><thead><tr><th class="border p-2">Quarter</th><th class="border p-2">Leads</th><th class="border p-2">Qualified</th><th class="border p-2">Qual %</th></tr></thead><tbody>';
+
+ quarters.forEach(q=>{
+   const m=quarterMetrics[q];
+   html+=`<tr>
+   <td class="border p-2">${q}</td>
+   <td class="border p-2">${m.leads}</td>
+   <td class="border p-2">${m.qualified}</td>
+   <td class="border p-2">${m.qualificationPct.toFixed(1)}%</td>
+   </tr>`;
+ });
+
+ html+='</tbody></table>';
+ el.innerHTML=html;
+}
 
 
 function renderDataSourcePanel(status='Ready', filesLoaded='0/4'){
@@ -2174,6 +2263,7 @@ async function loadRevOpsRootFolder(){
    }
 
    if(selector.options.length){
+      await buildQuarterMetrics();
       loadSelectedQuarter();
    }
 
