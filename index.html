@@ -126,6 +126,19 @@ function restoreSection(id){
 .school-content.collapsed{display:none}
 .school-toggle{cursor:pointer;font-weight:600;margin:10px 0}
 </style>
+
+<style>
+.help-box{background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:12px}
+.help-title{font-weight:700;cursor:pointer}
+.help-content{margin-top:8px;font-size:14px;color:#374151}
+</style>
+<script>
+function toggleHelp(id){
+ const el=document.getElementById(id);
+ if(el) el.style.display=(el.style.display==='none'?'block':'none');
+}
+</script>
+
 </head>
 
 <body class="bg-gray-100 min-h-screen p-6" style="padding-top:80px;">
@@ -136,7 +149,7 @@ function restoreSection(id){
 <a href="#sources">Sources</a> |
 <a href="#coverage">Coverage</a> |
 <a href="#leaderboard">Leaderboard</a> |
-<a href="#matrix">Matrix</a> |
+<a href="#matrix">Matrix</a> | <a href="#sourceeff">Source Efficiency</a> | <a href="#adveff">Advisor Effectiveness</a> | <a href="#quadrants">Quadrants</a> |
 <a href="#schools">Schools</a> |
 <a href="#executive">Executive</a> |
 <a href="#risks">Risks</a> |
@@ -196,7 +209,25 @@ function restoreSection(id){
 
   </div>
 
-  <!-- KPI TABLE -->
+  
+<div id="executiveSummarySection" class="bg-white rounded-2xl shadow p-6">
+
+<div class="help-box">
+<div class="help-title" onclick="toggleHelp('v28help')">ℹ Understanding the RevOps Decision Engine</div>
+<div id="v28help" class="help-content" style="display:none">
+<b>Source Efficiency</b>: Qualified Leads ÷ Total Leads. Measures lead quality.<br><br>
+<b>Advisor Effectiveness</b>: Actual Qualification % ÷ Expected Qualification %. Measures advisor performance adjusted for lead quality.<br><br>
+<b>Quadrants</b>: Classifies advisors into Star Performer, Hidden Gem, Coaching Opportunity, or Lead Quality Issue.<br><br>
+<b>Opportunity Index</b>: Expected % × Lead Volume × (1 − Performance Index). Prioritizes coaching effort.<br><br>
+<b>Executive Diagnosis</b>: Determines whether the primary bottleneck is lead quality, advisor performance, or both.
+</div>
+</div>
+
+<h2 class="text-xl font-semibold mb-4">Executive Summary</h2>
+<div id="executiveSummary" class="grid md:grid-cols-4 gap-4"></div>
+</div>
+
+<!-- KPI TABLE -->
   <div id="kpi" class="bg-white rounded-2xl shadow p-6">
 
     <h2 class="text-2xl font-bold mb-6">
@@ -311,6 +342,27 @@ function restoreSection(id){
   </div>
 
 
+
+<div id="sourceeff" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">Source Efficiency</h2>
+<div id="sourceEfficiencyTable"></div>
+</div>
+
+<div id="adveff" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">Advisor Effectiveness</h2>
+<div id="advisorEffectivenessTable"></div>
+</div>
+
+<div id="quadrants" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">Advisor Quadrant Matrix</h2>
+<div id="advisorQuadrantTable"></div>
+</div>
+
+<div class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">Executive Diagnosis</h2>
+<div id="executiveDiagnosis"></div>
+</div>
+
 <!-- ADVISOR PERFORMANCE -->
   <div id="schools" class="bg-white rounded-2xl shadow p-6">
     <div class="toggle-header" onclick="toggleSection('sec_schools')">▼ Advisor Performance by School</div><div id="sec_schools" class="section-content">
@@ -366,6 +418,9 @@ let advisorData = [];
 
 let sourceChart = null;
 let advisorChart = null;
+let sourceEfficiencyData=[];
+let advisorEffectivenessData=[];
+let advisorQuadrantData=[];
 
 const EXCLUDED_ADVISORS = [
   "Sales Queue",
@@ -587,6 +642,14 @@ console.log(
   renderExecutiveIntelligence();
   renderRiskAlerts();
   renderWorkloadHeatmap();
+  buildSourceEfficiency();
+  buildAdvisorEffectiveness();
+  buildAdvisorQuadrants();
+  renderSourceEfficiency();
+  renderAdvisorEffectiveness();
+  renderAdvisorQuadrants();
+  renderExecutiveDiagnosis();
+  renderExecutiveSummary();
   renderStrategicInsights();
 
   renderAdvisorBySchool();
@@ -1754,6 +1817,124 @@ function restoreSection(id){
  const el=document.getElementById(id);
  if(localStorage.getItem(id)==='true'){ el.classList.add('collapsed'); }
 }
+
+
+function renderExecutiveSummary(){
+ const c=document.getElementById('executiveSummary');
+ if(!c) return;
+
+ let totalLeads=0,totalQualified=0;
+ sourceData.forEach(r=>{
+   const n=Number(r['Record Count'])||0;
+   totalLeads+=n;
+   if(String(r['Lead Status']||'').toLowerCase().trim()==='qualified') totalQualified+=n;
+ });
+
+ const qualPct=totalLeads?((totalQualified/totalLeads)*100).toFixed(1):0;
+
+ let bestSource='-';
+ if(sourceEfficiencyData.length){
+   const filtered=sourceEfficiencyData.filter(x=>x.leads>=25);
+   if(filtered.length) bestSource=filtered.sort((a,b)=>b.qualificationPct-a.qualificationPct)[0].source;
+ }
+
+ let topAdvisor='-';
+ let topQualified=0;
+ advisorEffectivenessData.forEach(a=>{
+   if(a.qualified>topQualified){
+      topQualified=a.qualified;
+      topAdvisor=a.advisor;
+   }
+ });
+
+ let bottleneck='Mixed';
+ const hidden=advisorQuadrantData.filter(x=>x.quadrant==='Hidden Gem').length;
+ const coaching=advisorQuadrantData.filter(x=>x.quadrant==='Coaching Opportunity').length;
+ if(hidden>coaching) bottleneck='Lead Quality';
+ if(coaching>hidden) bottleneck='Advisor Effectiveness';
+
+ c.innerHTML=`
+ <div class="border rounded p-4"><div class="text-sm text-gray-500">Total Leads</div><div class="text-2xl font-bold">${totalLeads}</div></div>
+ <div class="border rounded p-4"><div class="text-sm text-gray-500">Qualified Leads</div><div class="text-2xl font-bold">${totalQualified}</div></div>
+ <div class="border rounded p-4"><div class="text-sm text-gray-500">Qualification %</div><div class="text-2xl font-bold">${qualPct}%</div></div>
+ <div class="border rounded p-4"><div class="text-sm text-gray-500">Best Source</div><div class="text-lg font-bold">${bestSource}</div></div>
+ <div class="border rounded p-4"><div class="text-sm text-gray-500">Top Advisor</div><div class="text-lg font-bold">${topAdvisor}</div></div>
+ <div class="border rounded p-4"><div class="text-sm text-gray-500">Primary Bottleneck</div><div class="text-lg font-bold">${bottleneck}</div></div>
+ `;
+}
+
+function buildSourceEfficiency(){
+ const map={};
+ sourceData.forEach(r=>{
+  const s=r['Lead Source']||'Unknown';
+  const st=String(r['Lead Status']||'').toLowerCase().trim();
+  const n=Number(r['Record Count'])||0;
+  if(!map[s]) map[s]={source:s,leads:0,qualified:0};
+  map[s].leads+=n;
+  if(st==='qualified') map[s].qualified+=n;
+ });
+ sourceEfficiencyData=Object.values(map).map(x=>({
+  ...x,qualificationPct:x.leads?x.qualified/x.leads*100:0
+ })).sort((a,b)=>b.qualificationPct-a.qualificationPct);
+}
+
+function buildAdvisorEffectiveness(){
+ const bench={};
+ sourceEfficiencyData.forEach(s=>bench[s.source]=s.qualificationPct);
+ const map={};
+ advisorData.forEach(r=>{
+  const a=r['Lead Owner']||'';
+  if(EXCLUDED_ADVISORS.includes(a)) return;
+  const src=r['Lead Source']||'Unknown';
+  const st=String(r['Lead Status']||'').toLowerCase().trim();
+  const n=Number(r['Record Count'])||0;
+  if(!map[a]) map[a]={advisor:a,leads:0,qualified:0,weighted:0};
+  map[a].leads+=n;
+  map[a].weighted+=n*(bench[src]||0);
+  if(st==='qualified') map[a].qualified+=n;
+ });
+ advisorEffectivenessData=Object.values(map).map(a=>{
+   const actual=a.leads?a.qualified/a.leads*100:0;
+   const expected=a.leads?a.weighted/a.leads:0;
+   const index=expected?actual/expected:0;
+   const rating=index>1.2?'Strong Outperformer':index>=1?'Above Expected':index>=0.8?'On Track':'Needs Attention';
+   return {...a,actual,expected,index,rating};
+ });
+}
+
+function buildAdvisorQuadrants(){
+ const avg=advisorEffectivenessData.reduce((s,a)=>s+a.expected,0)/(advisorEffectivenessData.length||1);
+ advisorQuadrantData=advisorEffectivenessData.map(a=>{
+  const q=a.expected>=avg?(a.index>=1?'Star Performer':'Coaching Opportunity'):(a.index>=1?'Hidden Gem':'Lead Quality Issue');
+  return {...a,quadrant:q};
+ });
+}
+
+function renderSourceEfficiency(){
+ const c=document.getElementById('sourceEfficiencyTable'); if(!c) return;
+ c.innerHTML='<table class="min-w-full border"><tr><th>Rank</th><th>Source</th><th>Leads</th><th>Qualified</th><th>Qual %</th></tr>'+sourceEfficiencyData.map((r,i)=>`<tr><td>${i+1}</td><td>${r.source}</td><td>${r.leads}</td><td>${r.qualified}</td><td>${r.qualificationPct.toFixed(1)}%</td></tr>`).join('')+'</table>';
+}
+
+function renderAdvisorEffectiveness(){
+ const c=document.getElementById('advisorEffectivenessTable'); if(!c) return;
+ c.innerHTML='<table class="min-w-full border"><tr><th>Advisor</th><th>Actual %</th><th>Expected %</th><th>Index</th><th>Rating</th></tr>'+advisorEffectivenessData.map(r=>`<tr><td>${r.advisor}</td><td>${r.actual.toFixed(1)}</td><td>${r.expected.toFixed(1)}</td><td>${r.index.toFixed(2)}</td><td>${r.rating}</td></tr>`).join('')+'</table>';
+}
+
+function renderAdvisorQuadrants(){
+ const c=document.getElementById('advisorQuadrantTable'); if(!c) return;
+ c.innerHTML='<table class="min-w-full border"><tr><th>Advisor</th><th>Quadrant</th></tr>'+advisorQuadrantData.map(r=>`<tr><td>${r.advisor}</td><td>${r.quadrant}</td></tr>`).join('')+'</table>';
+}
+
+function renderExecutiveDiagnosis(){
+ const c=document.getElementById('executiveDiagnosis'); if(!c) return;
+ const hidden=advisorQuadrantData.filter(x=>x.quadrant==='Hidden Gem').length;
+ const coaching=advisorQuadrantData.filter(x=>x.quadrant==='Coaching Opportunity').length;
+ let msg='Mixed Problem';
+ if(hidden>coaching) msg='Lead quality is the primary constraint.';
+ if(coaching>hidden) msg='Advisor effectiveness is the primary constraint.';
+ c.innerHTML='<div class="p-4 border rounded"><b>'+msg+'</b><br>Hidden Gems: '+hidden+' | Coaching Opportunities: '+coaching+'</div>';
+}
+
 </script>
 
 </body>
