@@ -197,7 +197,7 @@ Select RevOps Root Folder
 <div id="quarterRegistry"></div>
 <div class="mt-3">
 <label><b>Quarter Selector</b></label>
-<select id="quarterSelector" class="border p-2 rounded ml-2" onchange="loadSelectedQuarter()"></select>
+<select id="quarterSelector" class="border p-2 rounded ml-2" onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQuarter()"></select>
 </div>
 </div>
 
@@ -2142,7 +2142,93 @@ async function loadSelectedQuarter(){
 
 </script>
 
-<script>initializeAppMode();</script>
+<script>initializeAppMode(); initializeGitHubMode();
+async function initializeGitHubMode(){
+ if(APP_CONFIG.MODE!=='GITHUB') return;
+
+ const localBlocks = document.querySelectorAll('button[onclick="loadQuarterFolder()"],button[onclick="loadRevOpsRootFolder()"]');
+ localBlocks.forEach(btn=>{
+   const p = btn.closest('div.bg-green-50, div.bg-indigo-50');
+   if(p) p.style.display='none';
+ });
+
+ const selector = document.getElementById('quarterSelector');
+ const registry = document.getElementById('quarterRegistry');
+ if(!selector || !registry) return;
+
+ try{
+   const res = await fetch(`${APP_CONFIG.DATA_ROOT}/quarters.json`);
+   const cfg = await res.json();
+
+   selector.innerHTML='';
+   registry.innerHTML='<b>GitHub Data Mode</b><br>';
+
+   cfg.quarters.forEach(q=>{
+      selector.innerHTML += `<option value="${q}">${q}</option>`;
+      registry.innerHTML += `✅ ${q}<br>`;
+   });
+
+   selector.value = APP_CONFIG.DEFAULT_QUARTER || cfg.quarters[0];
+   loadSelectedQuarterGitHub();
+
+ }catch(err){
+   registry.innerHTML='❌ Unable to load quarters.json';
+   console.error(err);
+ }
+}
+
+async function fetchExcelFile(url){
+ const res = await fetch(url);
+ return await res.arrayBuffer();
+}
+
+async function loadSelectedQuarterGitHub(){
+ if(APP_CONFIG.MODE!=='GITHUB') return;
+
+ const q = document.getElementById('quarterSelector').value;
+ const root = `${APP_CONFIG.DATA_ROOT}/${q}`;
+
+ try{
+   const files = {
+     source: await fetchExcelFile(`${root}/source_summary.xlsx`),
+     interactive: await fetchExcelFile(`${root}/interactive_advisor.xlsx`),
+     pq: await fetchExcelFile(`${root}/pq_advisor.xlsx`),
+     executive: await fetchExcelFile(`${root}/executive_advisor.xlsx`)
+   };
+
+   if(typeof loadSourceArrayBuffer==='function'){
+      loadSourceArrayBuffer(files.source);
+      loadAdvisorArrayBuffer(files.interactive,'InterActive');
+      loadAdvisorArrayBuffer(files.pq,'LSBF Professional Qualifications');
+      loadAdvisorArrayBuffer(files.executive,'LSBF Executive Education');
+   }
+ }catch(err){
+   console.error(err);
+ }
+}
+
+function loadSourceArrayBuffer(buffer){
+ const workbook=XLSX.read(new Uint8Array(buffer),{type:'array'});
+ const sheet=workbook.Sheets[workbook.SheetNames[0]];
+ sourceData=XLSX.utils.sheet_to_json(sheet);
+ calculateDashboard();
+}
+
+function loadAdvisorArrayBuffer(buffer,bu){
+ const workbook=XLSX.read(new Uint8Array(buffer),{type:'array'});
+ const sheet=workbook.Sheets[workbook.SheetNames[0]];
+ let data=XLSX.utils.sheet_to_json(sheet);
+ data.forEach(r=>r['Business Unit']=bu);
+
+ if(bu==='InterActive') interactiveData=data;
+ if(bu==='LSBF Professional Qualifications') pqData=data;
+ if(bu==='LSBF Executive Education') executiveData=data;
+
+ advisorData=[...(interactiveData||[]),...(pqData||[]),...(executiveData||[])];
+ calculateDashboard();
+}
+
+</script>
 </body>
 </html>
 
