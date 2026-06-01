@@ -1,4 +1,4 @@
-3.1.4c
+3.1.5c
 <!DOCTYPE html>
 <html lang="en">
 
@@ -177,6 +177,11 @@ function toggleHelp(id){
   </div>
 
 
+
+<div id="systemAlert" class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4 text-sm">
+✅ System Ready
+</div>
+
 <div class="grid md:grid-cols-2 gap-6">
   <div id="dataSourcePanel" class="bg-white rounded-2xl shadow p-6">
     <h2 class="text-xl font-semibold mb-4">📡 Data Source</h2>
@@ -190,7 +195,7 @@ function toggleHelp(id){
 </div>
 
 
-<div class="bg-green-50 rounded-2xl shadow p-6 space-y-4">
+<div class="bg-green-50 rounded-2xl shadow p-6 space-y-4" style="display:none;">
 <h2 class="text-xl font-semibold">📁 Quarter Folder Loader (v3.0)</h2>
 <p>Select a folder containing:
 source_summary.xlsx, interactive_advisor.xlsx, pq_advisor.xlsx, executive_advisor.xlsx</p>
@@ -215,7 +220,7 @@ Select RevOps Root Folder
 </div>
 
 <!-- SOURCE REPORT -->
-  <div class="bg-white rounded-2xl shadow p-6 space-y-4">
+  <div class="bg-white rounded-2xl shadow p-6 space-y-4" style="display:none;">
 
     <h2 class="text-xl font-semibold">
       Upload Source Summary Report
@@ -230,7 +235,7 @@ Select RevOps Root Folder
   </div>
 
   <!-- ADVISOR REPORT -->
-  <div class="bg-white rounded-2xl shadow p-6 space-y-4">
+  <div class="bg-white rounded-2xl shadow p-6 space-y-4" style="display:none;">
 
     <h2 class="text-xl font-semibold">
       Upload Advisor Report
@@ -2014,6 +2019,7 @@ async function loadQuarterFolder(){
    if(files.executive) loadAdvisorFile(files.executive,'LSBF Executive Education');
 
  }catch(err){
+   showSystemAlert('❌ Quarter load failed');
    console.error(err);
  }
 }
@@ -2097,6 +2103,13 @@ function renderDataHealthPanel(quarters=[]){
    +'</div>';
 }
 
+
+function showSystemAlert(msg,type='info'){
+ const el=document.getElementById('systemAlert');
+ if(!el) return;
+ el.innerHTML=msg;
+}
+
 function initializeAppMode(){
  const reg=document.querySelector('button[onclick="loadRevOpsRootFolder()"]')?.parentElement;
  if(APP_CONFIG.MODE==='GITHUB'){
@@ -2114,7 +2127,20 @@ async function loadRevOpsRootFolder(){
  try{
    selectedRootHandle = await window.showDirectoryPicker();
    const registry = document.getElementById('quarterRegistry');
-   const selector = document.getElementById('quarterSelector');
+   
+   // Hide manual upload panels in GitHub mode
+   document.querySelectorAll('input[type="file"]').forEach(el=>{
+      const panel = el.closest('.bg-white,.bg-green-50,.bg-indigo-50');
+      if(panel) panel.style.display='none';
+   });
+
+   const alertBox=document.getElementById('systemAlert');
+   if(alertBox){
+      alertBox.innerHTML='✅ GitHub Mode Active';
+   }
+
+
+ const selector = document.getElementById('quarterSelector');
 
    registry.innerHTML='';
    selector.innerHTML='';
@@ -2190,10 +2216,8 @@ async function initializeGitHubMode(){
    const p = btn.closest('div.bg-green-50, div.bg-indigo-50');
    
 if(p){
-   const btns = p.querySelectorAll('button');
-   btns.forEach(b=>b.style.display='none');
-   p.classList.remove('bg-green-50');
-   p.classList.remove('bg-indigo-50');
+  const btns=p.querySelectorAll('button');
+  btns.forEach(b=>b.style.display='none');
 }
 
  });
@@ -2221,7 +2245,7 @@ if(p){
    loadSelectedQuarterGitHub();
 
  }catch(err){
-   registry.innerHTML='❌ Unable to load quarters.json';
+   showSystemAlert('❌ Unable to load quarters.json'); registry.innerHTML='❌ Unable to load quarters.json';
    console.error(err);
  }
 }
