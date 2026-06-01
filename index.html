@@ -1,4 +1,4 @@
-3.1.4b
+3.1.4c
 <!DOCTYPE html>
 <html lang="en">
 
@@ -2077,18 +2077,12 @@ function renderDataSourcePanel(status='Ready', filesLoaded='0/4'){
  if(!el) return;
  const quarter=document.getElementById('quarterSelector')?.value || APP_CONFIG.DEFAULT_QUARTER || '-';
  el.innerHTML=`
- <table class="min-w-full mb-4">
+ <table class="min-w-full">
    <tr><td><b>Mode</b></td><td>${APP_CONFIG.MODE}</td></tr>
    <tr><td><b>Quarter</b></td><td>${quarter}</td></tr>
    <tr><td><b>Status</b></td><td>${status}</td></tr>
    <tr><td><b>Files Loaded</b></td><td>${filesLoaded}</td></tr>
- </table>
- <div class="mt-3">
-   <label><b>Quarter Selector</b></label><br>
-   <select id="githubQuarterSelector" class="border p-2 rounded mt-2"
-      onchange="document.getElementById('quarterSelector').value=this.value; loadSelectedQuarterGitHub(); renderDataSourcePanel('Loaded','4/4');">
-   </select>
- </div>`;
+ </table>`;
 }
 
 function renderDataHealthPanel(quarters=[]){
@@ -2162,9 +2156,6 @@ async function loadRevOpsRootFolder(){
 
 async function loadSelectedQuarter(){
  const q = document.getElementById('quarterSelector').value;
- const gqs=document.getElementById('githubQuarterSelector');
- if(gqs) gqs.value=q;
- renderDataSourcePanel('Loaded','4/4');
  if(!q || !allQuarterData[q]) return;
 
  const dirHandle = allQuarterData[q].handle;
@@ -2197,7 +2188,14 @@ async function initializeGitHubMode(){
  const localBlocks = document.querySelectorAll('button[onclick="loadQuarterFolder()"],button[onclick="loadRevOpsRootFolder()"]');
  localBlocks.forEach(btn=>{
    const p = btn.closest('div.bg-green-50, div.bg-indigo-50');
-   if(p) p.style.display='none';
+   
+if(p){
+   const btns = p.querySelectorAll('button');
+   btns.forEach(b=>b.style.display='none');
+   p.classList.remove('bg-green-50');
+   p.classList.remove('bg-indigo-50');
+}
+
  });
 
  const selector = document.getElementById('quarterSelector');
@@ -2212,13 +2210,6 @@ async function initializeGitHubMode(){
    registry.innerHTML='<b>GitHub Data Mode</b><br>';
 
    renderDataHealthPanel(cfg.quarters);
-   const gqs=document.getElementById('githubQuarterSelector');
-   if(gqs){
-      gqs.innerHTML='';
-      cfg.quarters.forEach(q=>{
-         gqs.innerHTML += `<option value="${q}">${q}</option>`;
-      });
-   }
 
    cfg.quarters.forEach(q=>{
       selector.innerHTML += `<option value="${q}">${q}</option>`;
@@ -2226,8 +2217,6 @@ async function initializeGitHubMode(){
    });
 
    selector.value = APP_CONFIG.DEFAULT_QUARTER || cfg.quarters[0];
-   const gqs=document.getElementById('githubQuarterSelector');
-   if(gqs) gqs.value = selector.value;
    renderDataSourcePanel('Loaded','4/4');
    loadSelectedQuarterGitHub();
 
