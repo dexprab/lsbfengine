@@ -1,4 +1,4 @@
-3.1.4
+3.1.4a
 <!DOCTYPE html>
 <html lang="en">
 
@@ -176,7 +176,20 @@ function toggleHelp(id){
 
   </div>
 
-  
+
+<div class="grid md:grid-cols-2 gap-6">
+  <div id="dataSourcePanel" class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-xl font-semibold mb-4">📡 Data Source</h2>
+    <div id="dataSourceContent">Waiting for data load...</div>
+  </div>
+
+  <div id="dataHealthPanel" class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-xl font-semibold mb-4">🩺 Data Health</h2>
+    <div id="dataHealthContent">No quarter information loaded.</div>
+  </div>
+</div>
+
+
 <div class="bg-green-50 rounded-2xl shadow p-6 space-y-4">
 <h2 class="text-xl font-semibold">📁 Quarter Folder Loader (v3.0)</h2>
 <p>Select a folder containing:
@@ -201,17 +214,46 @@ Select RevOps Root Folder
 </div>
 </div>
 
-<!-- Legacy Upload Removed -->
-  
+<!-- SOURCE REPORT -->
+  <div class="bg-white rounded-2xl shadow p-6 space-y-4">
 
-  
+    <h2 class="text-xl font-semibold">
+      Upload Source Summary Report
+    </h2>
 
+    <input
+      type="file"
+      id="sourceFile"
+      class="border p-2 rounded w-full"
+    />
 
-<div id="dataSourcePanel" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-3">🗄 Data Source</h2>
-<div id="dataSourceInfo">Mode: GITHUB | Status: Ready</div>
-<div id="dataHealth" class="mt-4"></div>
+  </div>
+
+  <!-- ADVISOR REPORT -->
+  <div class="bg-white rounded-2xl shadow p-6 space-y-4">
+
+    <h2 class="text-xl font-semibold">
+      Upload Advisor Report
+    </h2>
+
+<div class="grid md:grid-cols-3 gap-4">
+<div>
+<label class="font-semibold">InterActive Advisor Report</label>
+<input type="file" id="interactiveFile" class="border p-2 rounded w-full"/>
 </div>
+<div>
+<label class="font-semibold">PQ Advisor Report</label>
+<input type="file" id="pqFile" class="border p-2 rounded w-full"/>
+</div>
+<div>
+<label class="font-semibold">Executive Advisor Report</label>
+<input type="file" id="executiveFile" class="border p-2 rounded w-full"/>
+</div>
+</div>
+
+  </div>
+
+  
 
 <div id="guide" class="bg-blue-50 rounded-2xl shadow p-6">
 <h2 class="text-2xl font-bold mb-4">📘 RevOps Framework Guide</h2>
@@ -2029,6 +2071,32 @@ function loadAdvisorFile(file,selectedBU){
 let allQuarterData = {};
 let selectedRootHandle = null;
 
+
+function renderDataSourcePanel(status='Ready', filesLoaded='0/4'){
+ const el=document.getElementById('dataSourceContent');
+ if(!el) return;
+ const quarter=document.getElementById('quarterSelector')?.value || APP_CONFIG.DEFAULT_QUARTER || '-';
+ el.innerHTML=`
+ <table class="min-w-full">
+   <tr><td><b>Mode</b></td><td>${APP_CONFIG.MODE}</td></tr>
+   <tr><td><b>Quarter</b></td><td>${quarter}</td></tr>
+   <tr><td><b>Status</b></td><td>${status}</td></tr>
+   <tr><td><b>Files Loaded</b></td><td>${filesLoaded}</td></tr>
+ </table>`;
+}
+
+function renderDataHealthPanel(quarters=[]){
+ const el=document.getElementById('dataHealthContent');
+ if(!el) return;
+ if(!quarters.length){
+   el.innerHTML='No quarter information available.';
+   return;
+ }
+ el.innerHTML='<div class="grid grid-cols-2 gap-2">'+
+   quarters.map(q=>`<div class="border rounded p-2">✅ ${q}</div>`).join('')
+   +'</div>';
+}
+
 function initializeAppMode(){
  const reg=document.querySelector('button[onclick="loadRevOpsRootFolder()"]')?.parentElement;
  if(APP_CONFIG.MODE==='GITHUB'){
@@ -2132,7 +2200,9 @@ async function initializeGitHubMode(){
    const cfg = await res.json();
 
    selector.innerHTML='';
-   registry.innerHTML='<b>GitHub Data Mode</b><br>'; document.getElementById("dataSourceInfo").innerHTML=`Mode: ${APP_CONFIG.MODE} | Default Quarter: ${APP_CONFIG.DEFAULT_QUARTER}`;
+   registry.innerHTML='<b>GitHub Data Mode</b><br>';
+
+   renderDataHealthPanel(cfg.quarters);
 
    cfg.quarters.forEach(q=>{
       selector.innerHTML += `<option value="${q}">${q}</option>`;
@@ -2140,23 +2210,13 @@ async function initializeGitHubMode(){
    });
 
    selector.value = APP_CONFIG.DEFAULT_QUARTER || cfg.quarters[0];
-   renderDataHealth(cfg); loadSelectedQuarterGitHub();
+   renderDataSourcePanel('Loaded','4/4');
+   loadSelectedQuarterGitHub();
 
  }catch(err){
    registry.innerHTML='❌ Unable to load quarters.json';
    console.error(err);
  }
-}
-
-
-function renderDataHealth(cfg){
- const el=document.getElementById('dataHealth');
- if(!el) return;
- let h='<h3><b>Data Health</b></h3>';
- cfg.quarters.forEach(q=>{
-   h += `<div>✅ ${q}</div>`;
- });
- el.innerHTML=h;
 }
 
 async function fetchExcelFile(url){
