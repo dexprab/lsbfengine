@@ -1,4 +1,4 @@
-3.2.2d
+3.2.3UX
 <!DOCTYPE html>
 <html lang="en">
 
@@ -137,6 +137,8 @@ function restoreSection(id){
 // =====================================
 // APP CONFIG
 // =====================================
+const UI_CONFIG = { MODE: "LIVE" };
+
 const APP_CONFIG = {
   MODE: "GITHUB", // LOCAL | GITHUB
   DEFAULT_QUARTER: "Q4-FY26",
@@ -290,9 +292,9 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
   
 
 <div id="guide" class="bg-blue-50 rounded-2xl shadow p-6">
-<h2 class="text-2xl font-bold mb-4">📘 RevOps Framework Guide</h2>
+<h2 class="text-2xl font-bold mb-4">🎯 About This Dashboard</h2>
 <div class="help-box">
-<div class="help-title" onclick="toggleHelp('v28help')">ℹ Understanding the RevOps Decision Engine</div>
+<div class="help-title" onclick="toggleHelp('v28help')">ℹ What is it and how is it calculated?</div>
 <div id="v28help" class="help-content" style="display:none">
 <b>Source Efficiency</b>: Qualified Leads ÷ Total Leads. Measures lead quality.<br><br>
 <b>Advisor Effectiveness</b>: Actual Qualification % ÷ Expected Qualification %. Measures advisor performance adjusted for lead quality.<br><br>
@@ -312,9 +314,6 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 </div>
 
 
-<div id="businessTrends" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">📈 Business Trends</h2>
-<div id="businessTrendsContent">Load RevOps Root Folder to build trends.</div>
 </div>
 
 <!-- KPI TABLE -->
@@ -2598,6 +2597,25 @@ function loadAdvisorArrayBuffer(buffer,bu){
  advisorData=[...(interactiveData||[]),...(pqData||[]),...(executiveData||[])];
 }
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+ if(typeof UI_CONFIG !== 'undefined' && UI_CONFIG.MODE==='LIVE'){
+   ['systemAlert','dataSourcePanel','dataHealthPanel'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.style.display='none';
+   });
+
+   document.querySelectorAll('h2').forEach(h=>{
+      if(h.innerText.includes('RevOps Root Folder')){
+         const card=h.closest('.bg-indigo-50');
+         if(card) card.style.display='none';
+      }
+   });
+ }
+});
+</script>
+
 </body>
 </html>
 
