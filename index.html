@@ -1,4 +1,4 @@
-3.2.3UXC
+3.2.3RC3
 <!DOCTYPE html>
 <html lang="en">
 
@@ -137,8 +137,6 @@ function restoreSection(id){
 // =====================================
 // APP CONFIG
 // =====================================
-const UI_CONFIG = { MODE: "LIVE" };
-
 const APP_CONFIG = {
   MODE: "GITHUB", // LOCAL | GITHUB
   DEFAULT_QUARTER: "Q4-FY26",
@@ -150,6 +148,19 @@ function toggleHelp(id){
  if(el) el.style.display=(el.style.display==='none'?'block':'none');
 }
 </script>
+
+
+<style>
+.metric-help{
+background:#f8fafc;
+border-left:4px solid #3b82f6;
+padding:10px;
+margin:10px 0 14px 0;
+font-size:13px;
+color:#475569;
+border-radius:6px;
+}
+</style>
 
 </head>
 
@@ -292,9 +303,9 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
   
 
 <div id="guide" class="bg-blue-50 rounded-2xl shadow p-6">
-<h2 class="text-2xl font-bold mb-4">🎯 About This Dashboard</h2>
+<h2 class="text-2xl font-bold mb-4">📘 RevOps Framework Guide</h2>
 <div class="help-box">
-<div class="help-title" onclick="toggleHelp('v28help')">ℹ What is it and how is it calculated?</div>
+<div class="help-title" onclick="toggleHelp('v28help')">ℹ Understanding the RevOps Decision Engine</div>
 <div id="v28help" class="help-content" style="display:none">
 <b>Source Efficiency</b>: Qualified Leads ÷ Total Leads. Measures lead quality.<br><br>
 <b>Advisor Effectiveness</b>: Actual Qualification % ÷ Expected Qualification %. Measures advisor performance adjusted for lead quality.<br><br>
@@ -309,11 +320,14 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 
 
 
-<h2 class="text-xl font-semibold mb-4">Executive Summary</h2>
+<h2 class="text-xl font-semibold mb-4">Executive Summary</h2><div class="metric-help"><b>What is it?</b> High-level business performance for selected quarters.<br><b>How is it calculated?</b> Aggregates leads, qualified leads and qualification rates.</div>
 <div id="executiveSummary" class="grid md:grid-cols-4 gap-4"></div>
 </div>
 
 
+<div id="businessTrends" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">📈 Business Trends</h2>
+<div id="businessTrendsContent">Load RevOps Root Folder to build trends.</div>
 </div>
 
 <!-- KPI TABLE -->
@@ -433,22 +447,22 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 
 
 <div id="sourceeff" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Source Efficiency</h2>
+<h2 class="text-xl font-semibold mb-4">Source Efficiency</h2><div class="metric-help"><b>What is it?</b> Measures lead quality by source.<br><b>How is it calculated?</b> Qualification % = Qualified Leads ÷ Total Leads.</div>
 <div id="sourceEfficiencyTable"></div>
 </div>
 
 <div id="adveff" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Advisor Effectiveness</h2>
+<h2 class="text-xl font-semibold mb-4">Advisor Effectiveness</h2><div class="metric-help"><b>What is it?</b> Measures advisor performance adjusted for lead quality.<br><b>How is it calculated?</b> Performance Index = Actual Qualification % ÷ Expected Qualification %.</div>
 <div id="advisorEffectivenessTable"></div>
 </div>
 
 <div id="quadrants" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Advisor Quadrant Matrix</h2>
+<h2 class="text-xl font-semibold mb-4">Advisor Quadrant Matrix</h2><div class="metric-help"><b>What is it?</b> Classifies advisors into Star Performer, Hidden Gem, Coaching Opportunity or Lead Quality Issue.<br><b>How is it calculated?</b> Combines Expected Lead Quality and Performance Index.</div>
 <div id="advisorQuadrantTable"></div>
 </div>
 
 <div class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Executive Diagnosis</h2>
+<h2 class="text-xl font-semibold mb-4">Executive Diagnosis</h2><div class="metric-help"><b>What is it?</b> Identifies the primary business bottleneck.<br><b>How is it calculated?</b> Compares Hidden Gems versus Coaching Opportunities.</div>
 <div id="executiveDiagnosis"></div>
 </div>
 
@@ -488,7 +502,7 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
   <div id="insightsSec" class="bg-white rounded-2xl shadow p-6">
 
     <h2 class="text-xl font-semibold mb-4">
-      Strategic Insights
+      Strategic Insights</h2><div class="metric-help"><b>What is it?</b> Recommended management actions.<br><b>How is it calculated?</b> Generated from source, advisor and quadrant analysis.</div><h2 class="text-xl font-semibold mb-4">
     </h2>
 
     <ul
@@ -2597,25 +2611,6 @@ function loadAdvisorArrayBuffer(buffer,bu){
  advisorData=[...(interactiveData||[]),...(pqData||[]),...(executiveData||[])];
 }
 </script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function(){
- if(typeof UI_CONFIG !== 'undefined' && UI_CONFIG.MODE==='LIVE'){
-   ['systemAlert','dataSourcePanel','dataHealthPanel'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) el.style.display='none';
-   });
-
-   document.querySelectorAll('h2').forEach(h=>{
-      if(h.innerText.includes('RevOps Root Folder')){
-         const card=h.closest('.bg-indigo-50');
-         if(card) card.style.display='none';
-      }
-   });
- }
-});
-</script>
-
 </body>
 </html>
 
