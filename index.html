@@ -1,4 +1,4 @@
-3.2.3RC3
+3.2.4
 <!DOCTYPE html>
 <html lang="en">
 
@@ -149,19 +149,6 @@ function toggleHelp(id){
 }
 </script>
 
-
-<style>
-.metric-help{
-background:#f8fafc;
-border-left:4px solid #3b82f6;
-padding:10px;
-margin:10px 0 14px 0;
-font-size:13px;
-color:#475569;
-border-radius:6px;
-}
-</style>
-
 </head>
 
 <body class="bg-gray-100 min-h-screen p-6" style="padding-top:110px;">
@@ -191,20 +178,7 @@ border-radius:6px;
 
 
 
-<div id="systemAlert" class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4 text-sm">
-✅ System Ready
-</div>
 
-<div class="grid md:grid-cols-2 gap-6">
-  <div id="dataSourcePanel" class="bg-white rounded-2xl shadow p-6">
-    <h2 class="text-xl font-semibold mb-4">📡 Data Source</h2>
-    <div id="dataSourceContent">Waiting for data load...</div>
-  </div>
-
-  <div id="dataHealthPanel" class="bg-white rounded-2xl shadow p-6">
-    <h2 class="text-xl font-semibold mb-4">🩺 Data Health</h2>
-    <div id="dataHealthContent">No quarter information loaded.</div>
-  </div>
 </div>
 
 
@@ -232,11 +206,11 @@ Select Quarter Folder
 </div>
 
 <div class="bg-indigo-50 rounded-2xl shadow p-6 space-y-4">
-<h2 class="text-xl font-semibold">🗂 RevOps Root Folder (v3.1)</h2>
-<button onclick="loadRevOpsRootFolder()" class="bg-indigo-600 text-white px-4 py-2 rounded">
+<h2 class="text-xl font-semibold">📅 Quarter Selector</h2>
+<button style="display:none" onclick="loadRevOpsRootFolder()" class="bg-indigo-600 text-white px-4 py-2 rounded">
 Select RevOps Root Folder
 </button>
-<div id="quarterRegistry"></div>
+<div id="quarterRegistry" style="display:none"></div>
 
 <div class="mt-3">
 <label><b>Quarter Selector</b></label>
@@ -303,11 +277,11 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
   
 
 <div id="guide" class="bg-blue-50 rounded-2xl shadow p-6">
-<h2 class="text-2xl font-bold mb-4">📘 RevOps Framework Guide</h2>
+<h2 class="text-2xl font-bold mb-4">🎯 About This Dashboard</h2>
 <div class="help-box">
 <div class="help-title" onclick="toggleHelp('v28help')">ℹ Understanding the RevOps Decision Engine</div>
 <div id="v28help" class="help-content" style="display:none">
-<b>Source Efficiency</b>: Qualified Leads ÷ Total Leads. Measures lead quality.<br><br>
+<b>What is it?</b><br>Determines whether business performance is driven by lead quality, advisor effectiveness, or both.<br><br><b>How is it calculated?</b><br>Combines Source Efficiency, Advisor Effectiveness and Advisor Quadrant analysis.<br><br>
 <b>Advisor Effectiveness</b>: Actual Qualification % ÷ Expected Qualification %. Measures advisor performance adjusted for lead quality.<br><br>
 <b>Quadrants</b>: Classifies advisors into Star Performer, Hidden Gem, Coaching Opportunity, or Lead Quality Issue.<br><br>
 <b>Opportunity Index</b>: Expected % × Lead Volume × (1 − Performance Index). Prioritizes coaching effort.<br><br>
@@ -320,14 +294,11 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 
 
 
-<h2 class="text-xl font-semibold mb-4">Executive Summary</h2><div class="metric-help"><b>What is it?</b> High-level business performance for selected quarters.<br><b>How is it calculated?</b> Aggregates leads, qualified leads and qualification rates.</div>
+<h2 class="text-xl font-semibold mb-4">Executive Summary</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures overall business performance. Calculated using aggregated leads, qualified leads and qualification rate.</div>
 <div id="executiveSummary" class="grid md:grid-cols-4 gap-4"></div>
 </div>
 
 
-<div id="businessTrends" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">📈 Business Trends</h2>
-<div id="businessTrendsContent">Load RevOps Root Folder to build trends.</div>
 </div>
 
 <!-- KPI TABLE -->
@@ -447,22 +418,22 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 
 
 <div id="sourceeff" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Source Efficiency</h2><div class="metric-help"><b>What is it?</b> Measures lead quality by source.<br><b>How is it calculated?</b> Qualification % = Qualified Leads ÷ Total Leads.</div>
+<h2 class="text-xl font-semibold mb-4">Source Efficiency</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures lead quality by source. Calculated as Qualified Leads ÷ Total Leads.</div>
 <div id="sourceEfficiencyTable"></div>
 </div>
 
 <div id="adveff" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Advisor Effectiveness</h2><div class="metric-help"><b>What is it?</b> Measures advisor performance adjusted for lead quality.<br><b>How is it calculated?</b> Performance Index = Actual Qualification % ÷ Expected Qualification %.</div>
+<h2 class="text-xl font-semibold mb-4">Advisor Effectiveness</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures advisor performance adjusted for lead quality. Performance Index = Actual % ÷ Expected %.</div>
 <div id="advisorEffectivenessTable"></div>
 </div>
 
 <div id="quadrants" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Advisor Quadrant Matrix</h2><div class="metric-help"><b>What is it?</b> Classifies advisors into Star Performer, Hidden Gem, Coaching Opportunity or Lead Quality Issue.<br><b>How is it calculated?</b> Combines Expected Lead Quality and Performance Index.</div>
+<h2 class="text-xl font-semibold mb-4">Advisor Quadrant Matrix</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Classifies advisors by performance and lead quality. Uses Performance Index and Expected Lead Quality.</div>
 <div id="advisorQuadrantTable"></div>
 </div>
 
 <div class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Executive Diagnosis</h2><div class="metric-help"><b>What is it?</b> Identifies the primary business bottleneck.<br><b>How is it calculated?</b> Compares Hidden Gems versus Coaching Opportunities.</div>
+<h2 class="text-xl font-semibold mb-4">Executive Diagnosis</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Identifies the primary business bottleneck. Compares Hidden Gems and Coaching Opportunities.</div>
 <div id="executiveDiagnosis"></div>
 </div>
 
@@ -502,7 +473,7 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
   <div id="insightsSec" class="bg-white rounded-2xl shadow p-6">
 
     <h2 class="text-xl font-semibold mb-4">
-      Strategic Insights</h2><div class="metric-help"><b>What is it?</b> Recommended management actions.<br><b>How is it calculated?</b> Generated from source, advisor and quadrant analysis.</div><h2 class="text-xl font-semibold mb-4">
+      Strategic Insights</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Provides recommended actions. Generated from source, advisor and quadrant analysis.</div><h2 class="text-xl font-semibold mb-4">
     </h2>
 
     <ul
