@@ -1,4 +1,4 @@
-3.2.F
+3.2.1b
 <!DOCTYPE html>
 <html lang="en">
 
@@ -213,10 +213,18 @@ Select Quarter Folder
 Select RevOps Root Folder
 </button>
 <div id="quarterRegistry"></div>
+
 <div class="mt-3">
 <label><b>Quarter Selector</b></label>
-<select id="quarterSelector" class="border p-2 rounded ml-2" onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQuarter()"></select>
+<div class="flex gap-2 my-2">
+<button onclick="selectAllQuarters()" class="bg-blue-600 text-white px-3 py-1 rounded">Select All</button>
+<button onclick="selectLatestQuarter()" class="bg-green-600 text-white px-3 py-1 rounded">Latest</button>
+<button onclick="clearAllQuarters()" class="bg-gray-600 text-white px-3 py-1 rounded">Clear</button>
 </div>
+<select id="quarterSelector" multiple size="6" class="border p-2 rounded w-full"
+onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQuarter()"></select>
+</div>
+
 </div>
 
 <!-- SOURCE REPORT -->
@@ -2140,6 +2148,46 @@ async function buildQuarterMetrics(){
  renderBusinessTrends();
 }
 
+
+async function buildQuarterMetricsGitHub(){
+ quarterMetrics={};
+ try{
+   const resp=await fetch(`${APP_CONFIG.DATA_ROOT}/quarters.json`);
+   const cfg=await resp.json();
+
+   for(const qName of cfg.quarters){
+     try{
+       const f=await fetch(`${APP_CONFIG.DATA_ROOT}/${qName}/source_summary.xlsx`);
+       const buffer=await f.arrayBuffer();
+       const workbook=XLSX.read(new Uint8Array(buffer),{type:'array'});
+       const sheet=workbook.Sheets[workbook.SheetNames[0]];
+       let rows=XLSX.utils.sheet_to_json(sheet);
+
+       let currentBU='',currentStatus='',currentSource='';
+       rows=rows.map(r=>{
+         if(r['Business Unit']) currentBU=r['Business Unit']; else r['Business Unit']=currentBU;
+         if(r['Lead Status']) currentStatus=r['Lead Status']; else r['Lead Status']=currentStatus;
+         if(r['Lead Source']) currentSource=r['Lead Source']; else r['Lead Source']=currentSource;
+         return r;
+       });
+
+       let leads=0,qualified=0;
+       rows.forEach(r=>{
+         const n=Number(r['Record Count'])||0;
+         leads+=n;
+         if(String(r['Lead Status']||'').toLowerCase().trim()==='qualified') qualified+=n;
+       });
+
+       quarterMetrics[qName]={
+         leads,qualified,
+         qualificationPct: leads ? (qualified/leads*100) : 0
+       };
+     }catch(e){console.error(e);}
+   }
+   renderBusinessTrends();
+ }catch(e){console.error(e);}
+}
+
 function renderBusinessTrends(){
  const el=document.getElementById('businessTrendsContent');
  if(!el) return;
@@ -2263,37 +2311,116 @@ async function loadRevOpsRootFolder(){
    }
 
    if(selector.options.length){
-      await buildQuarterMetrics();
+      if(APP_CONFIG.MODE==='GITHUB'){ await buildQuarterMetricsGitHub(); } else { await buildQuarterMetrics(); }
       loadSelectedQuarter();
    }
 
  }catch(err){ console.error(err); }
 }
 
+
+function getSelectedQuarters(){
+ const s=document.getElementById('quarterSelector');
+ return [...s.options].filter(o=>o.selected).map(o=>o.value);
+}
+function selectAllQuarters(){
+ const s=document.getElementById('quarterSelector');
+ [...s.options].forEach(o=>o.selected=true);
+ APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQuarter();
+}
+function clearAllQuarters(){
+ const s=document.getElementById('quarterSelector');
+ [...s.options].forEach(o=>o.selected=false);
+ sourceData=[];advisorData=[];
+ calculateDashboard();
+}
+function selectLatestQuarter(){
+ const s=document.getElementById('quarterSelector');
+ [...s.options].forEach(o=>o.selected=false);
+ if(s.options.length) s.options[s.options.length-1].selected=true;
+ APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQuarter();
+}
+
+
 async function loadSelectedQuarter(){
- const q = document.getElementById('quarterSelector').value;
- if(!q || !allQuarterData[q]) return;
 
- const dirHandle = allQuarterData[q].handle;
- const files = {};
+ const selected = getSelectedQuarters();
+ if(!selected.length) return;
 
- for await (const entry of dirHandle.values()){
-   if(entry.kind !== 'file') continue;
-   const name = entry.name.toLowerCase();
+ sourceData=[];
+ advisorData=[];
+ interactiveData=[];
+ pqData=[];
+ executiveData=[];
 
-   if(name.includes('source')) files.source = await entry.getFile();
-   else if(name.includes('interactive')) files.interactive = await entry.getFile();
-   else if(name.includes('pq')) files.pq = await entry.getFile();
-   else if(name.includes('executive')) files.executive = await entry.getFile();
+ for(const q of selected){
+
+   if(!allQuarterData[q]) continue;
+
+   const dirHandle = allQuarterData[q].handle;
+   const files = {};
+
+   for await (const entry of dirHandle.values()){
+      if(entry.kind !== 'file') continue;
+      const name = entry.name.toLowerCase();
+
+      if(name.includes('source')) files.source = await entry.getFile();
+      else if(name.includes('interactive')) files.interactive = await entry.getFile();
+      else if(name.includes('pq')) files.pq = await entry.getFile();
+      else if(name.includes('executive')) files.executive = await entry.getFile();
+   }
+
+   if(files.source){
+      const buffer = await files.source.arrayBuffer();
+      const wb = XLSX.read(new Uint8Array(buffer),{type:'array'});
+      const sh = wb.Sheets[wb.SheetNames[0]];
+      let rows = XLSX.utils.sheet_to_json(sh);
+
+      let currentBU='',currentStatus='',currentSource='';
+      rows=rows.map(r=>{
+        if(r['Business Unit']) currentBU=r['Business Unit']; else r['Business Unit']=currentBU;
+        if(r['Lead Status']) currentStatus=r['Lead Status']; else r['Lead Status']=currentStatus;
+        if(r['Lead Source']) currentSource=r['Lead Source']; else r['Lead Source']=currentSource;
+        return r;
+      });
+
+      sourceData.push(...rows);
+   }
+
+   async function addAdvisor(file,bu,target){
+      if(!file) return;
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(new Uint8Array(buffer),{type:'array'});
+      const sh = wb.Sheets[wb.SheetNames[0]];
+      let rows = XLSX.utils.sheet_to_json(sh);
+
+      let currentAdvisor='',currentSource='',currentStatus='';
+      rows=rows.map(r=>{
+        r['Business Unit']=bu;
+        if(r['Lead Owner']) currentAdvisor=r['Lead Owner']; else r['Lead Owner']=currentAdvisor;
+        if(r['Lead Source']) currentSource=r['Lead Source']; else r['Lead Source']=currentSource;
+        if(r['Lead Status']) currentStatus=r['Lead Status']; else r['Lead Status']=currentStatus;
+        return r;
+      });
+
+      target.push(...rows);
+   }
+
+   await addAdvisor(files.interactive,'InterActive',interactiveData);
+   await addAdvisor(files.pq,'LSBF Professional Qualifications',pqData);
+   await addAdvisor(files.executive,'LSBF Executive Education',executiveData);
  }
 
- interactiveData=[]; pqData=[]; executiveData=[]; advisorData=[];
+ advisorData=[...interactiveData,...pqData,...executiveData];
 
- if(files.source) loadSourceFile(files.source);
- if(files.interactive) loadAdvisorFile(files.interactive,'InterActive');
- if(files.pq) loadAdvisorFile(files.pq,'LSBF Professional Qualifications');
- if(files.executive) loadAdvisorFile(files.executive,'LSBF Executive Education');
+ calculateDashboard();
+
+ const ds=document.getElementById('dataSourceContent');
+ if(ds){
+   ds.innerHTML += `<div style="margin-top:8px"><b>Scope:</b> ${selected.join(' + ')}</div>`;
+ }
 }
+
 
 </script>
 
