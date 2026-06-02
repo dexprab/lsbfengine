@@ -1,4 +1,4 @@
-3.2.1cc
+3.2.1ccd
 <!DOCTYPE html>
 <html lang="en">
 
@@ -216,12 +216,22 @@ Select RevOps Root Folder
 
 <div class="mt-3">
 <label><b>Quarter Selector</b></label>
-<div class="flex gap-2 my-2">
-<button onclick="selectAllQuarters()" class="bg-blue-600 text-white px-3 py-1 rounded">Select All</button>
-<button onclick="selectLatestQuarter()" class="bg-green-600 text-white px-3 py-1 rounded">Latest</button>
-<button onclick="clearAllQuarters()" class="bg-gray-600 text-white px-3 py-1 rounded">Clear</button>
-</div>
-<select id="quarterSelector" multiple size="6" class="border p-2 rounded w-full"
+<div style="display:flex;gap:8px;margin:8px 0;">
+<button onclick="selectAllQuarters()"
+style="background:#2563eb;color:white;padding:8px 12px;border-radius:6px;">
+Select All
+</button>
+
+<button onclick="selectLatestQuarter()"
+style="background:#16a34a;color:white;padding:8px 12px;border-radius:6px;">
+Latest
+</button>
+
+<button onclick="clearAllQuarters()"
+style="background:#4b5563;color:white;padding:8px 12px;border-radius:6px;">
+Clear
+</button>
+</div><select id="quarterSelector" multiple size="6" class="border p-2 rounded w-full"
 onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQuarter()"></select>
 </div>
 
