@@ -1,4 +1,4 @@
-3.2.1c
+3.2.1cc
 <!DOCTYPE html>
 <html lang="en">
 
@@ -578,10 +578,6 @@ function handleSourceUpload(event) {
     sourceData = parsedData;
 
     calculateDashboard();
-try{
-  await buildQuarterMetricsGitHub();
-  renderBusinessTrends();
-}catch(e){console.error(e);}
 
   };
 
@@ -2496,6 +2492,9 @@ async function loadSelectedQuarterGitHub(){
       loadAdvisorArrayBuffer(files.pq,'LSBF Professional Qualifications');
       loadAdvisorArrayBuffer(files.executive,'LSBF Executive Education');
    calculateDashboard();
+
+ await buildQuarterMetricsGitHub();
+    renderBusinessTrends();
    }
  }catch(err){
    console.error(err);
@@ -2540,20 +2539,6 @@ function loadAdvisorArrayBuffer(buffer,bu){
  advisorData=[...(interactiveData||[]),...(pqData||[]),...(executiveData||[])];
 }
 </script>
-
-<script>
-window.addEventListener('load',()=>{
- setTimeout(async ()=>{
-   try{
-     if(APP_CONFIG.MODE==='GITHUB' && Object.keys(quarterMetrics||{}).length===0){
-       await buildQuarterMetricsGitHub();
-       renderBusinessTrends();
-     }
-   }catch(e){console.error('Trend init retry',e);}
- },1500);
-});
-</script>
-
 </body>
 </html>
 
