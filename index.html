@@ -1,4 +1,4 @@
-3.2.2b
+3.2.2c
 <!DOCTYPE html>
 <html lang="en">
 
@@ -206,17 +206,6 @@ Select Quarter Folder
 </div>
 
 
-
-
-<div id="quarterActionsStandalone" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-3">🗂 Quarter Actions</h2>
-<div style="display:flex;gap:8px;flex-wrap:wrap;">
-<button onclick="selectAllQuarters()" style="background:#2563eb;color:white;padding:8px 12px;border-radius:6px;">Select All</button>
-<button onclick="selectLatestQuarter()" style="background:#16a34a;color:white;padding:8px 12px;border-radius:6px;">Latest</button>
-<button onclick="clearAllQuarters()" style="background:#4b5563;color:white;padding:8px 12px;border-radius:6px;">Clear</button>
-<button onclick="selectAllQuarters()" style="background:#7c3aed;color:white;padding:8px 12px;border-radius:6px;">YTD</button>
-</div>
-</div>
 
 <div class="bg-indigo-50 rounded-2xl shadow p-6 space-y-4">
 <h2 class="text-xl font-semibold">🗂 RevOps Root Folder (v3.1)</h2>
@@ -2493,34 +2482,72 @@ async function fetchExcelFile(url){
  return await res.arrayBuffer();
 }
 
+
 async function loadSelectedQuarterGitHub(){
- if(APP_CONFIG.MODE!=='GITHUB') return;
 
- const q = document.getElementById('quarterSelector').value;
- const root = `${APP_CONFIG.DATA_ROOT}/${q}`;
+ const selected = getSelectedQuarters();
 
- try{
-   const files = {
-     source: await fetchExcelFile(`${root}/source_summary.xlsx`),
-     interactive: await fetchExcelFile(`${root}/interactive_advisor.xlsx`),
-     pq: await fetchExcelFile(`${root}/pq_advisor.xlsx`),
-     executive: await fetchExcelFile(`${root}/executive_advisor.xlsx`)
-   };
+ if(!selected.length) return;
 
-   if(typeof loadSourceArrayBuffer==='function'){
-      loadSourceArrayBuffer(files.source);
-      loadAdvisorArrayBuffer(files.interactive,'InterActive');
-      loadAdvisorArrayBuffer(files.pq,'LSBF Professional Qualifications');
-      loadAdvisorArrayBuffer(files.executive,'LSBF Executive Education');
-   calculateDashboard();
+ sourceData=[];
+ advisorData=[];
+ interactiveData=[];
+ pqData=[];
+ executiveData=[];
 
- await buildQuarterMetricsGitHub();
-    renderBusinessTrends();
+ for(const quarter of selected){
+
+   try{
+
+     const root = `${APP_CONFIG.DATA_ROOT}/${quarter}`;
+
+     const sourceResp = await fetch(`${root}/source_summary.xlsx`);
+     const sourceBuffer = await sourceResp.arrayBuffer();
+     const sourceWB = XLSX.read(new Uint8Array(sourceBuffer),{type:'array'});
+     const sourceSheet = sourceWB.Sheets[sourceWB.SheetNames[0]];
+     let sourceRows = XLSX.utils.sheet_to_json(sourceSheet);
+
+     let currentBU='',currentStatus='',currentSource='';
+     sourceRows = sourceRows.map(r=>{
+       if(r['Business Unit']) currentBU=r['Business Unit']; else r['Business Unit']=currentBU;
+       if(r['Lead Status']) currentStatus=r['Lead Status']; else r['Lead Status']=currentStatus;
+       if(r['Lead Source']) currentSource=r['Lead Source']; else r['Lead Source']=currentSource;
+       return r;
+     });
+
+     sourceData.push(...sourceRows);
+
+     async function loadAdvisorFileGitHub(fileName, bu){
+       const resp = await fetch(`${root}/${fileName}`);
+       const buffer = await resp.arrayBuffer();
+       const wb = XLSX.read(new Uint8Array(buffer),{type:'array'});
+       const sheet = wb.Sheets[wb.SheetNames[0]];
+       let rows = XLSX.utils.sheet_to_json(sheet);
+
+       let currentAdvisor='',currentSource='',currentStatus='';
+       rows = rows.map(r=>{
+         r['Business Unit']=bu;
+         if(r['Lead Owner']) currentAdvisor=r['Lead Owner']; else r['Lead Owner']=currentAdvisor;
+         if(r['Lead Source']) currentSource=r['Lead Source']; else r['Lead Source']=currentSource;
+         if(r['Lead Status']) currentStatus=r['Lead Status']; else r['Lead Status']=currentStatus;
+         return r;
+       });
+
+       advisorData.push(...rows);
+     }
+
+     await loadAdvisorFileGitHub('interactive_advisor.xlsx','InterActive');
+     await loadAdvisorFileGitHub('pq_advisor.xlsx','LSBF Professional Qualifications');
+     await loadAdvisorFileGitHub('executive_advisor.xlsx','LSBF Executive Education');
+
+   }catch(err){
+     console.error('Quarter load failed:', quarter, err);
    }
- }catch(err){
-   console.error(err);
  }
+
+ calculateDashboard();
 }
+
 
 
 function loadSourceArrayBuffer(buffer){
@@ -2563,11 +2590,3 @@ function loadAdvisorArrayBuffer(buffer,bu){
 </body>
 </html>
 
-
-<script>
-function forceQuarterActionsVisible(){
- const el=document.getElementById('quarterActionsStandalone');
- if(el) el.style.display='block';
-}
-document.addEventListener('DOMContentLoaded',forceQuarterActionsVisible);
-</script>
