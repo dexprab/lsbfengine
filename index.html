@@ -1,4 +1,4 @@
-3.2.5E
+3.2.5BE
 <!DOCTYPE html>
 <html lang="en">
 
@@ -294,7 +294,7 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 
 
 
-<h2 class="text-xl font-semibold mb-4">Executive Summary</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures overall business performance. Calculated using aggregated leads, qualified leads and qualification rate.</div>
+<h2 class="text-xl font-semibold mb-4">Executive Summary</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures overall business performance. Calculated using aggregated leads, qualified leads and qualification rate.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded from benchmark calculations.</div>
 <div id="executiveSummary" class="grid md:grid-cols-4 gap-4"></div>
 </div>
 
@@ -428,12 +428,12 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 </div>
 
 <div id="quadrants" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Advisor Quadrant Matrix</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Classifies advisors by performance and lead quality. Uses Performance Index and Expected Lead Quality.</div>
+<h2 class="text-xl font-semibold mb-4">Advisor Quadrant Matrix</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Classifies advisors by performance and lead quality. Uses Performance Index and Expected Lead Quality.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded from benchmark calculations.</div>
 <div id="advisorQuadrantTable"></div>
 </div>
 
 <div class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Executive Diagnosis</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Identifies the primary business bottleneck. Compares Hidden Gems and Coaching Opportunities.</div>
+<h2 class="text-xl font-semibold mb-4">Executive Diagnosis</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Identifies the primary business bottleneck. Compares Hidden Gems and Coaching Opportunities.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded from benchmark calculations.</div>
 <div id="executiveDiagnosis"></div>
 </div>
 
@@ -473,7 +473,7 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
   <div id="insightsSec" class="bg-white rounded-2xl shadow p-6">
 
     <h2 class="text-xl font-semibold mb-4">
-      Strategic Insights</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Provides recommended actions. Generated from source, advisor and quadrant analysis.</div><h2 class="text-xl font-semibold mb-4">
+      Strategic Insights</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Provides recommended actions. Generated from source, advisor and quadrant analysis.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded from benchmark calculations.</div><h2 class="text-xl font-semibold mb-4">
     </h2>
 
     <ul
@@ -1222,7 +1222,7 @@ function renderAdvisorCoverage() {
  if(!container) return;
  const map={};
 
- advisorData.forEach(row=>{
+ getBenchmarkAdvisorData().forEach(row=>{
    const bu=row["Business Unit"]||"Unknown";
    const advisor=row["Lead Owner"]||"";
    const count=Number(row["Record Count"])||0;
@@ -1257,7 +1257,7 @@ function renderAdvisorLeaderboard() {
  const map={};
  let totalQualified=0;
 
- advisorData.forEach(row=>{
+ getBenchmarkAdvisorData().forEach(row=>{
 
   const advisor=row["Lead Owner"]||"";
   if(EXCLUDED_ADVISORS.includes(advisor)) return;
@@ -1318,7 +1318,7 @@ function renderAdvisorBySchool() {
  schools.forEach(school=>{
   const map={};
 
-  advisorData.forEach(row=>{
+  getBenchmarkAdvisorData().forEach(row=>{
    if((row["Business Unit"]||"")!==school) return;
 
    const advisor=row["Lead Owner"]||"";
@@ -1363,7 +1363,7 @@ function renderAdvisorSourceMatrix(){
  const sources=new Set();
  const totals={};
 
- advisorData.forEach(row=>{
+ getBenchmarkAdvisorData().forEach(row=>{
 
    const advisor=row["Lead Owner"]||"";
    if(EXCLUDED_ADVISORS.includes(advisor)) return;
