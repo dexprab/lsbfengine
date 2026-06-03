@@ -1,4 +1,4 @@
-3.2.5BE
+3.2.5CE
 <!DOCTYPE html>
 <html lang="en">
 
@@ -405,7 +405,7 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
     <div id="sec_matrix" class="section-content">
       <div class="mb-4">
         <select id="matrixFilter" class="border p-2 rounded" onchange="renderAdvisorSourceMatrix()">
-          <option value="All">All Schools</option>
+          <option value="Benchmark" selected>Interactive + PQ</option><option value="All">All Schools</option>
           <option value="InterActive">InterActive</option>
           <option value="LSBF Professional Qualifications">PQ</option>
           <option value="LSBF Executive Education">Executive</option>
@@ -751,7 +751,7 @@ function calculateKPIs() {
 
   const buMap = {};
 
-  sourceData.forEach(row => {
+  getBenchmarkSourceData().forEach(row => {
 
     const bu = row["Business Unit"];
 
@@ -1222,7 +1222,10 @@ function renderAdvisorCoverage() {
  if(!container) return;
  const map={};
 
- getBenchmarkAdvisorData().forEach(row=>{
+ advisorData.forEach(row=>{
+
+   const bu=row["Business Unit"]||"";
+   if(filter==="Benchmark" && bu==="LSBF Executive Education") return;
    const bu=row["Business Unit"]||"Unknown";
    const advisor=row["Lead Owner"]||"";
    const count=Number(row["Record Count"])||0;
@@ -1318,7 +1321,7 @@ function renderAdvisorBySchool() {
  schools.forEach(school=>{
   const map={};
 
-  getBenchmarkAdvisorData().forEach(row=>{
+  advisorData.forEach(row=>{
    if((row["Business Unit"]||"")!==school) return;
 
    const advisor=row["Lead Owner"]||"";
