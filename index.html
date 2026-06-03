@@ -1,4 +1,4 @@
-3.2.4
+3.2.5E
 <!DOCTYPE html>
 <html lang="en">
 
@@ -29,7 +29,7 @@ function renderStrategicInsights(){
  let totalQ=0;
  const advisorMap={}, sourceMap={};
 
- advisorData.forEach(r=>{
+ getBenchmarkAdvisorData().forEach(r=>{
    const a=r['Lead Owner']||'';
    if(typeof EXCLUDED_ADVISORS!=='undefined' && EXCLUDED_ADVISORS.includes(a)) return;
 
@@ -418,12 +418,12 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 
 
 <div id="sourceeff" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Source Efficiency</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures lead quality by source. Calculated as Qualified Leads ÷ Total Leads.</div>
+<h2 class="text-xl font-semibold mb-4">Source Efficiency</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures lead quality by source. Calculated as Qualified Leads ÷ Total Leads.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded.</div>
 <div id="sourceEfficiencyTable"></div>
 </div>
 
 <div id="adveff" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Advisor Effectiveness</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures advisor performance adjusted for lead quality. Performance Index = Actual % ÷ Expected %.</div>
+<h2 class="text-xl font-semibold mb-4">Advisor Effectiveness</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures advisor performance adjusted for lead quality. Performance Index = Actual % ÷ Expected %.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded.</div>
 <div id="advisorEffectivenessTable"></div>
 </div>
 
@@ -495,6 +495,17 @@ let advisorChart = null;
 let sourceEfficiencyData=[];
 let advisorEffectivenessData=[];
 let advisorQuadrantData=[];
+
+
+const EE_BU = "LSBF Executive Education";
+
+function getBenchmarkAdvisorData(){
+  return advisorData.filter(r => (r["Business Unit"]||"") !== EE_BU);
+}
+
+function getBenchmarkSourceData(){
+  return sourceData.filter(r => (r["Business Unit"]||"") !== EE_BU);
+}
 
 const EXCLUDED_ADVISORS = [
   "Sales Queue",
@@ -1416,7 +1427,7 @@ function renderExecutiveIntelligence(){
  let totalQ=0, topA='', topQ=0, sourceMap={};
  const adv={};
 
- advisorData.forEach(r=>{
+ getBenchmarkAdvisorData().forEach(r=>{
    const a=r['Lead Owner']||'';
    if(EXCLUDED_ADVISORS.includes(a)) return;
    const s=(r['Lead Status']||'').toString().toLowerCase().trim();
@@ -1447,7 +1458,7 @@ function renderRiskAlerts(){
  let alerts=[];
 
  const src={}; let total=0;
- sourceData.forEach(r=>{
+ getBenchmarkSourceData().forEach(r=>{
    const s=(r['Lead Status']||'').toString().toLowerCase().trim();
    const srcName=r['Lead Source']||'Unknown';
    const n=Number(r['Record Count'])||0;
@@ -1466,7 +1477,7 @@ function renderWorkloadHeatmap(){
  const c=document.getElementById('workloadHeatmap'); if(!c) return;
  const map={};
 
- advisorData.forEach(r=>{
+ getBenchmarkAdvisorData().forEach(r=>{
    const a=r['Lead Owner']||'';
    if(EXCLUDED_ADVISORS.includes(a)) return;
    const s=(r['Lead Status']||'').toString().toLowerCase().trim();
@@ -1496,7 +1507,7 @@ function renderStrategicInsights(){
  let totalQ=0;
  const advisorMap={}, sourceMap={};
 
- advisorData.forEach(r=>{
+ getBenchmarkAdvisorData().forEach(r=>{
 
    const advisor=r['Lead Owner']||'';
 
@@ -1898,7 +1909,7 @@ function renderExecutiveSummary(){
  if(!c) return;
 
  let totalLeads=0,totalQualified=0;
- sourceData.forEach(r=>{
+ getBenchmarkSourceData().forEach(r=>{
    const n=Number(r['Record Count'])||0;
    totalLeads+=n;
    if(String(r['Lead Status']||'').toLowerCase().trim()==='qualified') totalQualified+=n;
@@ -1939,7 +1950,7 @@ function renderExecutiveSummary(){
 
 function buildSourceEfficiency(){
  const map={};
- sourceData.forEach(r=>{
+ getBenchmarkSourceData().forEach(r=>{
   const s=r['Lead Source']||'Unknown';
   const st=String(r['Lead Status']||'').toLowerCase().trim();
   const n=Number(r['Record Count'])||0;
@@ -1956,7 +1967,7 @@ function buildAdvisorEffectiveness(){
  const bench={};
  sourceEfficiencyData.forEach(s=>bench[s.source]=s.qualificationPct);
  const map={};
- advisorData.forEach(r=>{
+ getBenchmarkAdvisorData().forEach(r=>{
   const a=r['Lead Owner']||'';
   if(EXCLUDED_ADVISORS.includes(a)) return;
   const src=r['Lead Source']||'Unknown';
