@@ -1,4 +1,4 @@
-4.0bR6
+4.0bR6_1
 <!DOCTYPE html>
 <html lang="en">
 
@@ -2622,6 +2622,8 @@ async function loadSelectedQuarterGitHub(){
  pqData=[];
  executiveData=[];
  leadSummaryData=[];
+ const latestLeadQuarter = getLatestSelectedQuarter() || selected[selected.length-1];
+ leadSummaryQuarterUsed = latestLeadQuarter;
 
  for(const quarter of selected){
 
@@ -2668,14 +2670,16 @@ async function loadSelectedQuarterGitHub(){
      await loadAdvisorFileGitHub('pq_advisor.xlsx','LSBF Professional Qualifications');
      await loadAdvisorFileGitHub('executive_advisor.xlsx','LSBF Executive Education');
 
+     if(quarter===latestLeadQuarter){
      try{
        const leadResp=await fetch(`${root}/lead_summary.xlsx`);
        const leadBuffer=await leadResp.arrayBuffer();
        const leadWB=XLSX.read(new Uint8Array(leadBuffer),{type:'array'});
        const leadSheet=leadWB.Sheets[leadWB.SheetNames[0]];
        const leadRows=XLSX.utils.sheet_to_json(leadSheet);
-       leadSummaryData.push(...leadRows);
+       leadSummaryData = leadRows;
      }catch(e){console.error('lead summary load failed',e);}
+     }
 
    }catch(err){
      console.error('Quarter load failed:', quarter, err);
