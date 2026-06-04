@@ -1,4 +1,4 @@
-4.0bR1
+4.0bR3
 <!DOCTYPE html>
 <html lang="en">
 
@@ -532,8 +532,16 @@ function getBenchmarkSourceData(){
 const EXCLUDED_ADVISORS = [
   "Sales Queue",
   "Playbooks Integration User",
-  "Marketing Queue-LSBF UK"
+  "Marketing Queue-LSBF UK",
+  "Marketing Cloud Integration User",
+  "Marketing Tiger Team 2",
+  "Monisha Handoo",
+  "Venkata Ravi Gangavaram"
 ];
+
+function isExcludedOwner(owner){
+ return EXCLUDED_ADVISORS.includes((owner||"").trim());
+}
 
 // =====================================
 // EVENT LISTENERS
@@ -726,9 +734,13 @@ function renderLeadValidation(){
  const el=document.getElementById('leadValidationPanel');
  if(!el) return;
  if(!leadSummaryData.length){el.innerHTML='No lead summary loaded';return;}
- const uniq=f=>new Set(leadSummaryData.map(x=>x[f]).filter(Boolean)).size;
- el.innerHTML=`<div class="grid md:grid-cols-6 gap-4">
- <div class="border p-3 rounded"><b>Total Leads</b><br>${leadSummaryData.length}</div>
+ const filtered=leadSummaryData.filter(x=>!isExcludedOwner(x['Lead Owner']));
+ const uniq=f=>new Set(filtered.map(x=>x[f]).filter(Boolean)).size;
+ const excluded=leadSummaryData.length-filtered.length;
+ el.innerHTML=`<div class="grid md:grid-cols-8 gap-4">
+ <div class="border p-3 rounded"><b>Total Leads</b><br>${filtered.length}</div>
+ <div class="border p-3 rounded"><b>Excluded Records</b><br>${excluded}</div>
+ <div class="border p-3 rounded"><b>Active Records</b><br>${filtered.length}</div>
  <div class="border p-3 rounded"><b>Countries</b><br>${uniq('Country (text only)')}</div>
  <div class="border p-3 rounded"><b>Programmes</b><br>${uniq('Programme')}</div>
  <div class="border p-3 rounded"><b>Advisors</b><br>${uniq('Lead Owner')}</div>
@@ -740,13 +752,42 @@ function renderLeadValidation(){
 function renderLeadAging(){
  const el=document.getElementById('leadAgingPanel');
  if(!el) return;
- el.innerHTML='v4.0b Aging Engine Ready';
+ const filtered=leadSummaryData.filter(x=>!isExcludedOwner(x['Lead Owner']));
+const b={a:0,b:0,c:0,d:0};
+filtered.forEach(r=>{
+ const d=new Date(r['Last Modified']);
+ if(isNaN(d)) return;
+ const age=Math.floor((Date.now()-d.getTime())/86400000);
+ if(age<=7)b.a++; else if(age<=30)b.b++; else if(age<=60)b.c++; else b.d++;
+});
+el.innerHTML=`<div class='grid md:grid-cols-4 gap-4'>
+<div class='border p-3 rounded'>0-7<br>${b.a}</div>
+<div class='border p-3 rounded'>8-30<br>${b.b}</div>
+<div class='border p-3 rounded'>31-60<br>${b.c}</div>
+<div class='border p-3 rounded'>60+<br>${b.d}</div>
+</div>`;
 }
 
 function renderDormancy(){
  const el=document.getElementById('dormancyPanel');
  if(!el) return;
- el.innerHTML='v4.0b Dormancy Engine Ready';
+ const filtered=leadSummaryData.filter(x=>!isExcludedOwner(x['Lead Owner']));
+let dormant=0; const adv={};
+filtered.forEach(r=>{
+ const d=new Date(r['Last Modified']);
+ if(isNaN(d)) return;
+ const age=Math.floor((Date.now()-d.getTime())/86400000);
+ if(age>30){
+   dormant++;
+   const a=r['Lead Owner']||'Unknown';
+   adv[a]=(adv[a]||0)+1;
+ }
+});
+const top=Object.entries(adv).sort((a,b)=>b[1]-a[1]).slice(0,5)
+.map(x=>`${x[0]} (${x[1]})`).join('<br>');
+el.innerHTML=`<div><b>Dormant Leads:</b> ${dormant}<br>
+<b>Dormancy %:</b> ${filtered.length?((dormant/filtered.length)*100).toFixed(1):0}%
+<hr><b>Top Dormant Advisors</b><br>${top}</div>`;
 }
 
 function calculateDashboard() {
