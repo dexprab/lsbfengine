@@ -1,4 +1,4 @@
-4.0
+4.0b
 <!DOCTYPE html>
 <html lang="en">
 
@@ -297,6 +297,21 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 <h2 class="text-xl font-semibold mb-4">Executive Summary</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures overall business performance. Calculated using aggregated leads, qualified leads and qualification rate.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded from benchmark calculations.</div>
 <div id="executiveSummary" class="grid md:grid-cols-4 gap-4"></div>
 </div>
+<div id="leadValidationSection" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">Lead Summary Validation</h2>
+<div id="leadValidationPanel"></div>
+</div>
+
+<div id="leadAgingSection" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">Lead Aging Analysis</h2>
+<div id="leadAgingPanel"></div>
+</div>
+
+<div id="dormancySection" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">Dormancy Risk Monitor</h2>
+<div id="dormancyPanel"></div>
+</div>
+
 
 
 </div>
@@ -489,6 +504,13 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 
 let sourceData = [];
 let advisorData = [];
+let leadSummaryData = [];
+const QUARTER_END_DATES={
+"Q1-FY27":"2026-08-31",
+"Q2-FY27":"2026-11-30",
+"Q3-FY27":"2027-02-28",
+"Q4-FY27":"2027-05-31"
+};
 
 let sourceChart = null;
 let advisorChart = null;
@@ -699,6 +721,34 @@ function handleAdvisorUpload(event, selectedBU) {
 // MAIN DASHBOARD
 // =====================================
 
+
+function renderLeadValidation(){
+ const el=document.getElementById('leadValidationPanel');
+ if(!el) return;
+ if(!leadSummaryData.length){el.innerHTML='No lead summary loaded';return;}
+ const uniq=f=>new Set(leadSummaryData.map(x=>x[f]).filter(Boolean)).size;
+ el.innerHTML=`<div class="grid md:grid-cols-6 gap-4">
+ <div class="border p-3 rounded"><b>Total Leads</b><br>${leadSummaryData.length}</div>
+ <div class="border p-3 rounded"><b>Countries</b><br>${uniq('Country')}</div>
+ <div class="border p-3 rounded"><b>Programmes</b><br>${uniq('Programme')}</div>
+ <div class="border p-3 rounded"><b>Advisors</b><br>${uniq('Lead Owner')}</div>
+ <div class="border p-3 rounded"><b>Sources</b><br>${uniq('Lead Source')}</div>
+ <div class="border p-3 rounded"><b>Business Units</b><br>${uniq('Business Unit')}</div>
+ </div>`;
+}
+
+function renderLeadAging(){
+ const el=document.getElementById('leadAgingPanel');
+ if(!el) return;
+ el.innerHTML='v4.0b Aging Engine Ready';
+}
+
+function renderDormancy(){
+ const el=document.getElementById('dormancyPanel');
+ if(!el) return;
+ el.innerHTML='v4.0b Dormancy Engine Ready';
+}
+
 function calculateDashboard() {
 
   calculateKPIs();
@@ -738,6 +788,9 @@ console.log(
   renderStrategicInsights();
 
   renderAdvisorBySchool();
+renderLeadValidation();
+renderLeadAging();
+renderDormancy();
 
   //generateInsights();
 
@@ -2595,24 +2648,6 @@ function loadAdvisorArrayBuffer(buffer,bu){
  advisorData=[...(interactiveData||[]),...(pqData||[]),...(executiveData||[])];
 }
 </script>
-
-<!-- V4.0a Lead Summary Validation -->
-<div id="leadSummaryValidation" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">🔍 Lead Summary Validation (v4.0a)</h2>
-<p class="text-gray-600 mb-3">Loader foundation for lead_summary.xlsx</p>
-<table class="min-w-full border">
-<tr><td class="border p-2"><b>Total Leads</b></td><td class="border p-2" id="lsTotalLeads">Waiting for lead_summary.xlsx</td></tr>
-<tr><td class="border p-2"><b>Countries</b></td><td class="border p-2" id="lsCountries">-</td></tr>
-<tr><td class="border p-2"><b>Programmes</b></td><td class="border p-2" id="lsProgrammes">-</td></tr>
-<tr><td class="border p-2"><b>Advisors</b></td><td class="border p-2" id="lsAdvisors">-</td></tr>
-<tr><td class="border p-2"><b>Sources</b></td><td class="border p-2" id="lsSources">-</td></tr>
-<tr><td class="border p-2"><b>Business Units</b></td><td class="border p-2" id="lsBU">-</td></tr>
-</table>
-<div class="mt-3 text-sm text-gray-500">
-Q1=Jun-Aug, Q2=Sep-Nov, Q3=Dec-Feb, Q4=Mar-May
-</div>
-</div>
-
 </body>
 </html>
 
