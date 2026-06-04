@@ -1,4 +1,4 @@
-3.2.5CF
+4.0
 <!DOCTYPE html>
 <html lang="en">
 
@@ -2595,6 +2595,24 @@ function loadAdvisorArrayBuffer(buffer,bu){
  advisorData=[...(interactiveData||[]),...(pqData||[]),...(executiveData||[])];
 }
 </script>
+
+<!-- V4.0a Lead Summary Validation -->
+<div id="leadSummaryValidation" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">🔍 Lead Summary Validation (v4.0a)</h2>
+<p class="text-gray-600 mb-3">Loader foundation for lead_summary.xlsx</p>
+<table class="min-w-full border">
+<tr><td class="border p-2"><b>Total Leads</b></td><td class="border p-2" id="lsTotalLeads">Waiting for lead_summary.xlsx</td></tr>
+<tr><td class="border p-2"><b>Countries</b></td><td class="border p-2" id="lsCountries">-</td></tr>
+<tr><td class="border p-2"><b>Programmes</b></td><td class="border p-2" id="lsProgrammes">-</td></tr>
+<tr><td class="border p-2"><b>Advisors</b></td><td class="border p-2" id="lsAdvisors">-</td></tr>
+<tr><td class="border p-2"><b>Sources</b></td><td class="border p-2" id="lsSources">-</td></tr>
+<tr><td class="border p-2"><b>Business Units</b></td><td class="border p-2" id="lsBU">-</td></tr>
+</table>
+<div class="mt-3 text-sm text-gray-500">
+Q1=Jun-Aug, Q2=Sep-Nov, Q3=Dec-Feb, Q4=Mar-May
+</div>
+</div>
+
 </body>
 </html>
 
