@@ -1,4 +1,4 @@
-4.0bR6_2_S
+4.0bR6_2_1
 <!DOCTYPE html>
 <html lang="en">
 
@@ -804,6 +804,17 @@ el.innerHTML=`<div><b>Dormant Leads:</b> ${dormant}<br>
 }
 
 
+
+function agingColor(status,b){
+ if(status==='New'){
+   return ['#dcfce7','#fef3c7','#fecaca','#ef4444'][b];
+ }
+ if(status==='Working'){
+   return ['#dcfce7','#dcfce7','#fef3c7','#fecaca'][b];
+ }
+ return ['#dcfce7','#dcfce7','#dcfce7','#fef3c7'][b];
+}
+
 function renderLeadAgingV2(){
  const el=document.getElementById('leadAgingPanel');
  if(!el) return;
@@ -860,10 +871,10 @@ function renderLeadAgingV2(){
    <h3 class="font-bold text-lg mb-3">${st} Lead Aging</h3>
 
    <div class="grid md:grid-cols-4 gap-3 mb-3">
-   <div class="border p-2 rounded">0-7<br><b>${c[0]}</b></div>
-   <div class="border p-2 rounded">8-30<br><b>${c[1]}</b></div>
-   <div class="border p-2 rounded">31-60<br><b>${c[2]}</b></div>
-   <div class="border p-2 rounded">60+<br><b>${c[3]}</b></div>
+   <div class="border p-2 rounded" style="background:${agingColor(st,0)}">0-7<br><b>${c[0]}</b></div>
+   <div class="border p-2 rounded" style="background:${agingColor(st,1)}">8-30<br><b>${c[1]}</b></div>
+   <div class="border p-2 rounded" style="background:${agingColor(st,2)}">31-60<br><b>${c[2]}</b></div>
+   <div class="border p-2 rounded" style="background:${agingColor(st,3)}">60+<br><b>${c[3]}</b></div>
    </div>
 
    <table class="min-w-full border">
