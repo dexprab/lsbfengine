@@ -1,4 +1,4 @@
-4.0bR6_2
+4.0bR6_2_1
 <!DOCTYPE html>
 <html lang="en">
 
@@ -767,56 +767,81 @@ function renderLeadAging(){
  const el=document.getElementById('leadAgingPanel');
  if(!el) return;
 
- const filtered=leadSummaryData.filter(x=>!isExcludedOwner(x['Lead Owner']));
+ const filtered=leadSummaryData.filter(r=>!isExcludedOwner(r['Lead Owner']));
 
- const groups={
-   New:['new'],
-   Working:['working'],
-   Nurturing:['nurturing'],
-   Unqualified:['unqualified']
- };
+ const statuses=['New','Working','Nurturing'];
 
- function bucket(age){
+ function ageBucket(age){
    if(age<=7) return 0;
    if(age<=30) return 1;
    if(age<=60) return 2;
    return 3;
  }
 
- let html='<div class="space-y-6">';
- Object.entries(groups).forEach(([name,statuses])=>{
+ let activePool={New:0,Working:0,Nurturing:0};
+ let html='<div class="mb-6"><h3 class="font-bold mb-2">Active Lead Pool</h3><div class="grid md:grid-cols-4 gap-3">';
+
+ statuses.forEach(st=>{
+   activePool[st]=filtered.filter(r=>String(r['Lead Status']||'').trim()===st).length;
+ });
+
+ const totalPool=activePool.New+activePool.Working+activePool.Nurturing;
+
+ html+=`<div class="border p-3 rounded"><b>New</b><br>${activePool.New}</div>`;
+ html+=`<div class="border p-3 rounded"><b>Working</b><br>${activePool.Working}</div>`;
+ html+=`<div class="border p-3 rounded"><b>Nurturing</b><br>${activePool.Nurturing}</div>`;
+ html+=`<div class="border p-3 rounded"><b>Active Pool</b><br>${totalPool}</div></div></div>`;
+
+ statuses.forEach(st=>{
    const counts=[0,0,0,0];
-   const school={};
+   const schools={};
 
    filtered.forEach(r=>{
-      const st=String(r['Lead Status']||'').toLowerCase().trim();
-      if(!statuses.includes(st)) return;
+      if(String(r['Lead Status']||'').trim()!==st) return;
 
       const d=new Date(r['Last Modified']);
       if(isNaN(d)) return;
 
       const age=Math.floor((Date.now()-d.getTime())/86400000);
-      counts[bucket(age)]++;
+      const idx=ageBucket(age);
 
-      const bu=r['Business Unit']||'Unknown';
-      if(!school[bu]) school[bu]=[0,0,0,0];
-      school[bu][bucket(age)]++;
+      counts[idx]++;
+
+      const school=r['Business Unit']||'Unknown';
+      if(!schools[school]) schools[school]=[0,0,0,0];
+      schools[school][idx]++;
    });
 
-   html+=`<div class="border rounded p-3">
-   <h3 class="font-bold text-lg mb-2">${name}</h3>
-   <div class="grid md:grid-cols-4 gap-2 mb-3">
-   <div class="border p-2">0-7<br><b>${counts[0]}</b></div>
-   <div class="border p-2">8-30<br><b>${counts[1]}</b></div>
-   <div class="border p-2">31-60<br><b>${counts[2]}</b></div>
-   <div class="border p-2">60+<br><b>${counts[3]}</b></div>
+   html+=`<div class="border rounded p-4 mb-4">
+   <h3 class="font-bold text-lg mb-3">${st} Lead Aging</h3>
+
+   <div class="grid md:grid-cols-4 gap-3 mb-3">
+    <div class="border p-2 rounded">0-7<br><b>${counts[0]}</b></div>
+    <div class="border p-2 rounded">8-30<br><b>${counts[1]}</b></div>
+    <div class="border p-2 rounded">31-60<br><b>${counts[2]}</b></div>
+    <div class="border p-2 rounded">60+<br><b>${counts[3]}</b></div>
    </div>
-   <table class="min-w-full border text-sm">
-   <tr><th class="border p-1">School</th><th class="border p-1">0-7</th><th class="border p-1">8-30</th><th class="border p-1">31-60</th><th class="border p-1">60+</th></tr>
-   ${Object.entries(school).map(([s,v])=>`<tr><td class="border p-1">${s}</td><td class="border p-1">${v[0]}</td><td class="border p-1">${v[1]}</td><td class="border p-1">${v[2]}</td><td class="border p-1">${v[3]}</td></tr>`).join('')}
-   </table></div>`;
+
+   <table class="min-w-full border">
+   <tr>
+    <th class="border p-2">School</th>
+    <th class="border p-2">0-7</th>
+    <th class="border p-2">8-30</th>
+    <th class="border p-2">31-60</th>
+    <th class="border p-2">60+</th>
+   </tr>
+   ${Object.entries(schools).map(([s,v])=>
+      `<tr>
+        <td class="border p-2">${s}</td>
+        <td class="border p-2">${v[0]}</td>
+        <td class="border p-2">${v[1]}</td>
+        <td class="border p-2">${v[2]}</td>
+        <td class="border p-2">${v[3]}</td>
+      </tr>`).join('')}
+   </table>
+   </div>`;
  });
- html+='</div>';
+
  el.innerHTML=html;
 }
 );
