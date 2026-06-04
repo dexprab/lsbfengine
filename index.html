@@ -1,4 +1,4 @@
-4.0bR4
+4.0bR5
 <!DOCTYPE html>
 <html lang="en">
 
@@ -738,9 +738,9 @@ function renderLeadValidation(){
  const uniq=f=>new Set(filtered.map(x=>x[f]).filter(Boolean)).size;
  const excluded=leadSummaryData.length-filtered.length;
  el.innerHTML=`<div class="grid md:grid-cols-8 gap-4">
- <div class="border p-3 rounded"><b>Total Leads</b><br>${filtered.length}</div>
+ <div class="border p-3 rounded"><b>Raw Leads</b><br>${leadSummaryData.length}</div>
  <div class="border p-3 rounded"><b>Excluded Records</b><br>${excluded}</div>
- <div class="border p-3 rounded"><b>Active Records</b><br>${filtered.length}</div>
+ <div class="border p-3 rounded"><b>Active Leads</b><br>${filtered.length}</div>
  <div class="border p-3 rounded"><b>Countries</b><br>${uniq('Country (text only)')}</div>
  <div class="border p-3 rounded"><b>Programmes</b><br>${uniq('Programme')}</div>
  <div class="border p-3 rounded"><b>Advisors</b><br>${uniq('Lead Owner')}</div>
@@ -2441,9 +2441,20 @@ function selectAllQuarters(){
  APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQuarter();
 }
 function clearAllQuarters(){
- const s=document.getElementById('quarterSelector');
- [...s.options].forEach(o=>o.selected=false);
- sourceData=[];advisorData=[];
+ const sel=document.getElementById('quarterSelector');
+ if(sel){
+   Array.from(sel.options).forEach(o=>o.selected=false);
+ }
+ sourceData=[];
+ advisorData=[];
+ interactiveData=[];
+ pqData=[];
+ executiveData=[];
+ leadSummaryData=[];
+
+ renderLeadValidation();
+ renderLeadAging();
+ renderDormancy();
  calculateDashboard();
 }
 function selectLatestQuarter(){
