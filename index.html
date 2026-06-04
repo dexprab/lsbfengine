@@ -1,4 +1,4 @@
-4.0bR6_2_1
+4.0bR6_1
 <!DOCTYPE html>
 <html lang="en">
 
@@ -762,89 +762,17 @@ function renderLeadValidation(){
  </div>`;
 }
 
-
 function renderLeadAging(){
  const el=document.getElementById('leadAgingPanel');
  if(!el) return;
-
- const filtered=leadSummaryData.filter(r=>!isExcludedOwner(r['Lead Owner']));
-
- const statuses=['New','Working','Nurturing'];
-
- function ageBucket(age){
-   if(age<=7) return 0;
-   if(age<=30) return 1;
-   if(age<=60) return 2;
-   return 3;
- }
-
- let activePool={New:0,Working:0,Nurturing:0};
- let html='<div class="mb-6"><h3 class="font-bold mb-2">Active Lead Pool</h3><div class="grid md:grid-cols-4 gap-3">';
-
- statuses.forEach(st=>{
-   activePool[st]=filtered.filter(r=>String(r['Lead Status']||'').trim()===st).length;
- });
-
- const totalPool=activePool.New+activePool.Working+activePool.Nurturing;
-
- html+=`<div class="border p-3 rounded"><b>New</b><br>${activePool.New}</div>`;
- html+=`<div class="border p-3 rounded"><b>Working</b><br>${activePool.Working}</div>`;
- html+=`<div class="border p-3 rounded"><b>Nurturing</b><br>${activePool.Nurturing}</div>`;
- html+=`<div class="border p-3 rounded"><b>Active Pool</b><br>${totalPool}</div></div></div>`;
-
- statuses.forEach(st=>{
-   const counts=[0,0,0,0];
-   const schools={};
-
-   filtered.forEach(r=>{
-      if(String(r['Lead Status']||'').trim()!==st) return;
-
-      const d=new Date(r['Last Modified']);
-      if(isNaN(d)) return;
-
-      const age=Math.floor((Date.now()-d.getTime())/86400000);
-      const idx=ageBucket(age);
-
-      counts[idx]++;
-
-      const school=r['Business Unit']||'Unknown';
-      if(!schools[school]) schools[school]=[0,0,0,0];
-      schools[school][idx]++;
-   });
-
-   html+=`<div class="border rounded p-4 mb-4">
-   <h3 class="font-bold text-lg mb-3">${st} Lead Aging</h3>
-
-   <div class="grid md:grid-cols-4 gap-3 mb-3">
-    <div class="border p-2 rounded">0-7<br><b>${counts[0]}</b></div>
-    <div class="border p-2 rounded">8-30<br><b>${counts[1]}</b></div>
-    <div class="border p-2 rounded">31-60<br><b>${counts[2]}</b></div>
-    <div class="border p-2 rounded">60+<br><b>${counts[3]}</b></div>
-   </div>
-
-   <table class="min-w-full border">
-   <tr>
-    <th class="border p-2">School</th>
-    <th class="border p-2">0-7</th>
-    <th class="border p-2">8-30</th>
-    <th class="border p-2">31-60</th>
-    <th class="border p-2">60+</th>
-   </tr>
-   ${Object.entries(schools).map(([s,v])=>
-      `<tr>
-        <td class="border p-2">${s}</td>
-        <td class="border p-2">${v[0]}</td>
-        <td class="border p-2">${v[1]}</td>
-        <td class="border p-2">${v[2]}</td>
-        <td class="border p-2">${v[3]}</td>
-      </tr>`).join('')}
-   </table>
-   </div>`;
- });
-
- el.innerHTML=html;
-}
-);
+ const filtered=leadSummaryData.filter(x=>!isExcludedOwner(x['Lead Owner']));
+const b={a:0,b:0,c:0,d:0};
+filtered.forEach(r=>{
+ const d=new Date(r['Last Modified']);
+ if(isNaN(d)) return;
+ const age=Math.floor((Date.now()-d.getTime())/86400000);
+ if(age<=7)b.a++; else if(age<=30)b.b++; else if(age<=60)b.c++; else b.d++;
+});
 el.innerHTML=`<div class='grid md:grid-cols-4 gap-4'>
 <div class='border p-3 rounded'>0-7<br>${b.a}</div>
 <div class='border p-3 rounded'>8-30<br>${b.b}</div>
