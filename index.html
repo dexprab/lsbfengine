@@ -1,4 +1,4 @@
-4.0b
+4.0bR1
 <!DOCTYPE html>
 <html lang="en">
 
@@ -729,7 +729,7 @@ function renderLeadValidation(){
  const uniq=f=>new Set(leadSummaryData.map(x=>x[f]).filter(Boolean)).size;
  el.innerHTML=`<div class="grid md:grid-cols-6 gap-4">
  <div class="border p-3 rounded"><b>Total Leads</b><br>${leadSummaryData.length}</div>
- <div class="border p-3 rounded"><b>Countries</b><br>${uniq('Country')}</div>
+ <div class="border p-3 rounded"><b>Countries</b><br>${uniq('Country (text only)')}</div>
  <div class="border p-3 rounded"><b>Programmes</b><br>${uniq('Programme')}</div>
  <div class="border p-3 rounded"><b>Advisors</b><br>${uniq('Lead Owner')}</div>
  <div class="border p-3 rounded"><b>Sources</b><br>${uniq('Lead Source')}</div>
@@ -2420,6 +2420,7 @@ async function loadSelectedQuarter(){
 
  sourceData=[];
  advisorData=[];
+ leadSummaryData=[];
  interactiveData=[];
  pqData=[];
  executiveData=[];
@@ -2600,6 +2601,15 @@ async function loadSelectedQuarterGitHub(){
      await loadAdvisorFileGitHub('interactive_advisor.xlsx','InterActive');
      await loadAdvisorFileGitHub('pq_advisor.xlsx','LSBF Professional Qualifications');
      await loadAdvisorFileGitHub('executive_advisor.xlsx','LSBF Executive Education');
+
+     try{
+       const leadResp=await fetch(`${root}/lead_summary.xlsx`);
+       const leadBuffer=await leadResp.arrayBuffer();
+       const leadWB=XLSX.read(new Uint8Array(leadBuffer),{type:'array'});
+       const leadSheet=leadWB.Sheets[leadWB.SheetNames[0]];
+       const leadRows=XLSX.utils.sheet_to_json(leadSheet);
+       leadSummaryData.push(...leadRows);
+     }catch(e){console.error('lead summary load failed',e);}
 
    }catch(err){
      console.error('Quarter load failed:', quarter, err);
