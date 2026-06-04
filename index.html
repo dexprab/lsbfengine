@@ -1,4 +1,4 @@
-4.0bR6_1
+4.0bR6_2_S
 <!DOCTYPE html>
 <html lang="en">
 
@@ -803,6 +803,80 @@ el.innerHTML=`<div><b>Dormant Leads:</b> ${dormant}<br>
 <hr><b>Top Dormant Advisors</b><br>${top}</div>`;
 }
 
+
+function renderLeadAgingV2(){
+ const el=document.getElementById('leadAgingPanel');
+ if(!el) return;
+
+ const filtered=leadSummaryData.filter(r=>!isExcludedOwner(r['Lead Owner']));
+
+ const statuses=['New','Working','Nurturing'];
+
+ function bucket(age){
+   if(age<=7) return 0;
+   if(age<=30) return 1;
+   if(age<=60) return 2;
+   return 3;
+ }
+
+ let out='';
+
+ let active={New:0,Working:0,Nurturing:0};
+ statuses.forEach(st=>{
+   active[st]=filtered.filter(r=>String(r['Lead Status']||'').trim()===st).length;
+ });
+
+ const total=active.New+active.Working+active.Nurturing;
+
+ out+=`<div class="mb-4"><h3 class="font-bold mb-2">Active Lead Pool</h3>
+ <div class="grid md:grid-cols-4 gap-3">
+ <div class="border p-3 rounded"><b>New</b><br>${active.New}</div>
+ <div class="border p-3 rounded"><b>Working</b><br>${active.Working}</div>
+ <div class="border p-3 rounded"><b>Nurturing</b><br>${active.Nurturing}</div>
+ <div class="border p-3 rounded"><b>Active Pool</b><br>${total}</div>
+ </div></div>`;
+
+ statuses.forEach(st=>{
+   const c=[0,0,0,0];
+   const schools={};
+
+   filtered.forEach(r=>{
+      if(String(r['Lead Status']||'').trim()!==st) return;
+
+      const d=new Date(r['Last Modified']);
+      if(isNaN(d)) return;
+
+      const age=Math.floor((Date.now()-d.getTime())/86400000);
+      const b=bucket(age);
+
+      c[b]++;
+
+      const school=r['Business Unit']||'Unknown';
+      if(!schools[school]) schools[school]=[0,0,0,0];
+      schools[school][b]++;
+   });
+
+   out+=`<div class="border rounded p-4 mb-4">
+   <h3 class="font-bold text-lg mb-3">${st} Lead Aging</h3>
+
+   <div class="grid md:grid-cols-4 gap-3 mb-3">
+   <div class="border p-2 rounded">0-7<br><b>${c[0]}</b></div>
+   <div class="border p-2 rounded">8-30<br><b>${c[1]}</b></div>
+   <div class="border p-2 rounded">31-60<br><b>${c[2]}</b></div>
+   <div class="border p-2 rounded">60+<br><b>${c[3]}</b></div>
+   </div>
+
+   <table class="min-w-full border">
+   <tr><th class="border p-2">School</th><th class="border p-2">0-7</th><th class="border p-2">8-30</th><th class="border p-2">31-60</th><th class="border p-2">60+</th></tr>
+   ${Object.entries(schools).map(([s,v])=>`<tr><td class="border p-2">${s}</td><td class="border p-2">${v[0]}</td><td class="border p-2">${v[1]}</td><td class="border p-2">${v[2]}</td><td class="border p-2">${v[3]}</td></tr>`).join('')}
+   </table>
+   </div>`;
+ });
+
+ el.innerHTML=out;
+}
+
+
 function calculateDashboard() {
 
   calculateKPIs();
@@ -843,7 +917,7 @@ console.log(
 
   renderAdvisorBySchool();
 renderLeadValidation();
-renderLeadAging();
+renderLeadAgingV2();
 renderDormancy();
 
   //generateInsights();
