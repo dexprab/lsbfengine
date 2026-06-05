@@ -1,4 +1,4 @@
-4.0bR6_4_6
+4.0bR6_4_7
 <!DOCTYPE html>
 <html lang="en">
 
@@ -308,7 +308,7 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 </div>
 
 <div id="qualifiedVelocitySection" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Qualified Lead Velocity</h2>
+<h2 class="text-xl font-semibold mb-4">Qualified Lead Velocity (R6.4.7 True Qualification Velocity Engine)</h2>
 <div id="qualifiedVelocityPanel"></div>
 </div>
 
@@ -510,6 +510,11 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 let sourceData = [];
 let advisorData = [];
 let leadSummaryData = [];
+
+let qualifiedHistoryData=[];
+const QUALIFIED_HISTORY_PATH='./data/Qualified_History/Lead_History_Qualified_FY26.xlsx';
+// R6.4.7 True Qualification Velocity Engine scaffold
+
 const QUARTER_END_DATES={
 "Q1-FY27":"2026-08-31",
 "Q2-FY27":"2026-11-30",
