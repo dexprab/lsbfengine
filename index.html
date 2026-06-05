@@ -1,4 +1,4 @@
-4.0bR6_4_4
+4.0bR6_4_5
 <!DOCTYPE html>
 <html lang="en">
 
@@ -969,7 +969,8 @@ function renderCountrySourceVelocity(){
       if((r['Business Unit']||'')!==school) return;
 
       const country=r['Country (text only)']||'Unknown';
-      const source=r['Lead Source']||'Unknown';
+      const desc=(r['Lead Source Description']||'').toString().trim();
+      const source=desc ? ((r['Lead Source']||'Unknown')+' | '+desc) : (r['Lead Source']||'Unknown');
       const key=country+'||'+source;
 
       if(!combos[key]) combos[key]={country,source,leads:0,qualified:0,days:0};
@@ -988,7 +989,10 @@ function renderCountrySourceVelocity(){
    });
 
    let rows=Object.values(combos)
-   .filter(x=>x.leads>=20 && x.qualified>0)
+   .filter(x=>{
+      const minLeads=(school==='LSBF Executive Education'?10:20);
+      return x.leads>=minLeads && x.qualified>0;
+    })
    .map(x=>{
       const convPct=(x.qualified/x.leads)*100;
       const contribPct=schoolQualified ? (x.qualified/schoolQualified)*100 : 0;
@@ -999,7 +1003,11 @@ function renderCountrySourceVelocity(){
    });
 
    const scale=[...rows].sort((a,b)=>b.score-a.score).slice(0,10);
-   const attention=[...rows].sort((a,b)=>(a.convPct-b.convPct)|| (b.contribPct-a.contribPct) || (b.avgDays-a.avgDays)).slice(0,10);
+   const scaleKeys=new Set(scale.map(x=>x.country+'||'+x.source));
+   const attention=[...rows]
+      .filter(x=>!scaleKeys.has(x.country+'||'+x.source))
+      .sort((a,b)=>(a.convPct-b.convPct)|| (b.contribPct-a.contribPct) || (b.avgDays-a.avgDays))
+      .slice(0,10);
 
    block+=`<h3 class="text-xl font-bold mt-6 mb-2">${school} - Opportunity Intelligence</h3>`;
 
@@ -1869,7 +1877,8 @@ function renderStrategicInsights(){
       .toLowerCase()
       .trim();
 
-   const source=r['Lead Source']||'Unknown';
+   const desc=(r['Lead Source Description']||'').toString().trim();
+      const source=desc ? ((r['Lead Source']||'Unknown')+' | '+desc) : (r['Lead Source']||'Unknown');
    const count=Number(r['Record Count'])||0;
 
    if(status==='qualified'){
