@@ -1,4 +1,4 @@
-4.0bR6_4_7TVW
+4.0bR6_4_8TVS
 <!DOCTYPE html>
 <html lang="en">
 
@@ -980,17 +980,17 @@ function renderCountrySourceVelocity(){
       const source=desc ? ((r['Lead Source']||'Unknown')+' | '+desc) : (r['Lead Source']||'Unknown');
       const key=country+'||'+source;
 
-      if(!combos[key]) combos[key]={country,source,leads:0,qualified:0,days:0};
+      if(!combos[key]) combos[key]={country,source,leads:0,qualified:0,matched:0,days:0};
 
       combos[key].leads++;
 
       if(String(r['Lead Status']||'').trim()==='Qualified'){
          combos[key].qualified++;
          schoolQualified++;
-         const c=new Date(r['Create Date']);
-         const m=new Date(r['Last Modified']);
-         if(!isNaN(c)&&!isNaN(m)){
-            combos[key].days += Math.floor((m-c)/86400000);
+         const days=getTrueVelocityDays(r);
+         if(days!==null){
+            combos[key].days += days;
+            combos[key].matched++;
          }
       }
    });
@@ -1003,10 +1003,11 @@ function renderCountrySourceVelocity(){
    .map(x=>{
       const convPct=(x.qualified/x.leads)*100;
       const contribPct=schoolQualified ? (x.qualified/schoolQualified)*100 : 0;
-      const avgDays=x.days/x.qualified;
+      const avgDays=x.matched ? x.days/x.matched : 999;
+      const matchPct=x.qualified ? (x.matched/x.qualified)*100 : 0;
       const score=(contribPct*0.60)+(convPct*0.30)+((Math.max(0,60-avgDays)/60)*100*0.10);
 
-      return {...x,convPct,contribPct,avgDays,score};
+      return {...x,convPct,contribPct,matchPct,avgDays,score};
    });
 
    const scale=[...rows].sort((a,b)=> (b.contribPct-a.contribPct) || (b.convPct-a.convPct) || (a.avgDays-b.avgDays)).slice(0,10);
@@ -1026,6 +1027,8 @@ function renderCountrySourceVelocity(){
       <th class="border p-2">Source</th>
       <th class="border p-2">Leads</th>
       <th class="border p-2">Qualified</th>
+      <th class="border p-2">Matched</th>
+      <th class="border p-2">Match %</th>
       <th class="border p-2">Conv %</th>
       <th class="border p-2">Contribution %</th>
       <th class="border p-2">Avg Days</th>
@@ -1039,6 +1042,8 @@ function renderCountrySourceVelocity(){
         <td class="border p-2">${r.source}</td>
         <td class="border p-2">${r.leads}</td>
         <td class="border p-2">${r.qualified}</td>
+        <td class="border p-2">${r.matched||0}</td>
+        <td class="border p-2">${(r.matchPct||0).toFixed(1)}%</td>
         <td class="border p-2" style="background:${pctColor(r.convPct)}">${r.convPct.toFixed(1)}%</td>
         <td class="border p-2" style="background:${pctColor(r.contribPct)}">${r.contribPct.toFixed(1)}%</td>
         <td class="border p-2">${r.avgDays.toFixed(1)}</td>
