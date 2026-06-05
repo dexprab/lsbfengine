@@ -1,4 +1,4 @@
-4.0bR6_4_1
+4.0bR6_4_2
 <!DOCTYPE html>
 <html lang="en">
 
@@ -949,6 +949,73 @@ function renderQualifiedVelocity(){
 }
 
 
+
+function renderCountrySourceVelocity(){
+ const el=document.getElementById('qualifiedVelocityPanel');
+ if(!el || !leadSummaryData.length) return;
+
+ const pairs={}, aging={};
+
+ leadSummaryData.forEach(r=>{
+   const country=r['Country (text only)']||'Unknown';
+   const source=r['Lead Source']||'Unknown';
+
+   // qualified velocity
+   if(String(r['Lead Status']||'').trim()==='Qualified'){
+      const c=new Date(r['Create Date']);
+      const m=new Date(r['Last Modified']);
+      if(!isNaN(c) && !isNaN(m)){
+        const days=Math.floor((m-c)/86400000);
+        const k=country+'||'+source;
+        if(!pairs[k]) pairs[k]={country,source,q:0,d:0};
+        pairs[k].q++;
+        pairs[k].d+=days;
+      }
+   }
+
+   // aging
+   const st=String(r['Lead Status']||'').trim();
+   if(['New','Working','Nurturing'].includes(st)){
+      const lm=new Date(r['Last Modified']);
+      if(!isNaN(lm)){
+        const age=Math.floor((Date.now()-lm.getTime())/86400000);
+        if(!aging[country]) aging[country]={leads:0,days:0};
+        aging[country].leads++;
+        aging[country].days+=age;
+      }
+   }
+ });
+
+ const rows=Object.values(pairs).filter(x=>x.q>=10).map(x=>({
+   ...x, avg:x.d/x.q
+ }));
+
+ const fastest=[...rows].sort((a,b)=>a.avg-b.avg).slice(0,10);
+ const slowest=[...rows].sort((a,b)=>b.avg-a.avg).slice(0,10);
+
+ let block='<div class="mt-6"><h3 class="text-lg font-bold mb-2">🚀 Fastest Country × Source Combinations</h3>';
+ block+='<table class="min-w-full border mb-4"><tr><th>Country</th><th>Source</th><th>Qualified</th><th>Avg Days</th></tr>';
+ fastest.forEach(r=>block+=`<tr><td>${r.country}</td><td>${r.source}</td><td>${r.q}</td><td>${r.avg.toFixed(1)}</td></tr>`);
+ block+='</table>';
+
+ block+='<h3 class="text-lg font-bold mb-2">⚠ Slowest Country × Source Combinations</h3>';
+ block+='<table class="min-w-full border mb-4"><tr><th>Country</th><th>Source</th><th>Qualified</th><th>Avg Days</th></tr>';
+ slowest.forEach(r=>block+=`<tr><td>${r.country}</td><td>${r.source}</td><td>${r.q}</td><td>${r.avg.toFixed(1)}</td></tr>`);
+ block+='</table>';
+
+ const agingRows=Object.entries(aging).map(([c,v])=>({
+   country:c, leads:v.leads, avg:v.days/v.leads
+ })).sort((a,b)=>b.avg-a.avg).slice(0,10);
+
+ block+='<h3 class="text-lg font-bold mb-2">🔥 Highest Aging Countries</h3>';
+ block+='<table class="min-w-full border"><tr><th>Country</th><th>Active Leads</th><th>Avg Aging Days</th></tr>';
+ agingRows.forEach(r=>block+=`<tr><td>${r.country}</td><td>${r.leads}</td><td>${r.avg.toFixed(1)}</td></tr>`);
+ block+='</table></div>';
+
+ el.innerHTML += block;
+}
+
+
 function calculateDashboard() {
 
   calculateKPIs();
@@ -991,6 +1058,7 @@ console.log(
 renderLeadValidation();
 renderLeadAgingV2();
 renderQualifiedVelocity();
+renderCountrySourceVelocity();
 renderDormancy();
 
   //generateInsights();
