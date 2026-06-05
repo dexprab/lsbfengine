@@ -1,4 +1,4 @@
-4.0bR6_4_7.1
+4.0bR6_4_7F
 <!DOCTYPE html>
 <html lang="en">
 
@@ -520,6 +520,8 @@ const QUARTER_END_DATES={
 let sourceChart = null;
 
 let qualifiedDateMap = {};
+let velocityMatchStats={qualified:0,matched:0};
+
 
 async function loadQualifiedHistory(){
  try{
