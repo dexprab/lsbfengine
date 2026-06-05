@@ -1,4 +1,4 @@
-4.0bR6_4_2
+4.0bR6_4_3
 <!DOCTYPE html>
 <html lang="en">
 
@@ -950,70 +950,86 @@ function renderQualifiedVelocity(){
 
 
 
+
 function renderCountrySourceVelocity(){
  const el=document.getElementById('qualifiedVelocityPanel');
  if(!el || !leadSummaryData.length) return;
 
- const pairs={}, aging={};
+ const schools=['InterActive','LSBF Professional Qualifications','LSBF Executive Education'];
+ let block='';
 
- leadSummaryData.forEach(r=>{
-   const country=r['Country (text only)']||'Unknown';
-   const source=r['Lead Source']||'Unknown';
+ function qualColor(v){ return v>=40?'#dcfce7':(v>=20?'#fef3c7':'#fecaca'); }
+ function dayColor(v){ return v<=15?'#dcfce7':(v<=30?'#fef3c7':'#fecaca'); }
 
-   // qualified velocity
-   if(String(r['Lead Status']||'').trim()==='Qualified'){
-      const c=new Date(r['Create Date']);
-      const m=new Date(r['Last Modified']);
-      if(!isNaN(c) && !isNaN(m)){
-        const days=Math.floor((m-c)/86400000);
-        const k=country+'||'+source;
-        if(!pairs[k]) pairs[k]={country,source,q:0,d:0};
-        pairs[k].q++;
-        pairs[k].d+=days;
+ schools.forEach(school=>{
+   const combos={};
+
+   leadSummaryData.forEach(r=>{
+      if((r['Business Unit']||'')!==school) return;
+
+      const country=r['Country (text only)']||'Unknown';
+      const source=r['Lead Source']||'Unknown';
+      const key=country+'||'+source;
+
+      if(!combos[key]) combos[key]={country,source,leads:0,qualified:0,days:0};
+
+      combos[key].leads++;
+
+      if(String(r['Lead Status']||'').trim()==='Qualified'){
+         combos[key].qualified++;
+         const c=new Date(r['Create Date']);
+         const m=new Date(r['Last Modified']);
+         if(!isNaN(c)&&!isNaN(m)){
+            combos[key].days += Math.floor((m-c)/86400000);
+         }
       }
+   });
+
+   let rows=Object.values(combos)
+     .filter(x=>x.leads>=20 && x.qualified>0)
+     .map(x=>({
+        ...x,
+        qualPct:(x.qualified/x.leads)*100,
+        avgDays:x.days/x.qualified
+     }));
+
+   const scale=[...rows].sort((a,b)=>b.qualPct-a.qualPct || a.avgDays-b.avgDays).slice(0,10);
+   const attention=[...rows].sort((a,b)=>a.qualPct-b.qualPct || b.avgDays-a.avgDays).slice(0,10);
+
+   block+=`<h3 class="text-xl font-bold mt-6 mb-2">${school} - Country × Source Intelligence</h3>`;
+
+   function renderTable(title,data){
+      let h=`<h4 class="font-bold mt-3 mb-2">${title}</h4>
+      <table class="min-w-full border border-gray-300 mb-4">
+      <tr style="background:#e5e7eb">
+      <th class="border p-2">Country</th>
+      <th class="border p-2">Source</th>
+      <th class="border p-2">Leads</th>
+      <th class="border p-2">Qualified</th>
+      <th class="border p-2">Qual %</th>
+      <th class="border p-2">Avg Days</th>
+      </tr>`;
+      data.forEach((r,i)=>{
+         const bg=i%2===0?'#ffffff':'#f9fafb';
+         h+=`<tr style="background:${bg}">
+         <td class="border p-2">${r.country}</td>
+         <td class="border p-2">${r.source}</td>
+         <td class="border p-2">${r.leads}</td>
+         <td class="border p-2">${r.qualified}</td>
+         <td class="border p-2" style="background:${qualColor(r.qualPct)}">${r.qualPct.toFixed(1)}%</td>
+         <td class="border p-2" style="background:${dayColor(r.avgDays)}">${r.avgDays.toFixed(1)}</td>
+         </tr>`;
+      });
+      return h+'</table>';
    }
 
-   // aging
-   const st=String(r['Lead Status']||'').trim();
-   if(['New','Working','Nurturing'].includes(st)){
-      const lm=new Date(r['Last Modified']);
-      if(!isNaN(lm)){
-        const age=Math.floor((Date.now()-lm.getTime())/86400000);
-        if(!aging[country]) aging[country]={leads:0,days:0};
-        aging[country].leads++;
-        aging[country].days+=age;
-      }
-   }
+   block+=renderTable('🚀 Scale Opportunities',scale);
+   block+=renderTable('⚠ Attention Required',attention);
  });
-
- const rows=Object.values(pairs).filter(x=>x.q>=10).map(x=>({
-   ...x, avg:x.d/x.q
- }));
-
- const fastest=[...rows].sort((a,b)=>a.avg-b.avg).slice(0,10);
- const slowest=[...rows].sort((a,b)=>b.avg-a.avg).slice(0,10);
-
- let block='<div class="mt-6"><h3 class="text-lg font-bold mb-2">🚀 Fastest Country × Source Combinations</h3>';
- block+='<table class="min-w-full border mb-4"><tr><th>Country</th><th>Source</th><th>Qualified</th><th>Avg Days</th></tr>';
- fastest.forEach(r=>block+=`<tr><td>${r.country}</td><td>${r.source}</td><td>${r.q}</td><td>${r.avg.toFixed(1)}</td></tr>`);
- block+='</table>';
-
- block+='<h3 class="text-lg font-bold mb-2">⚠ Slowest Country × Source Combinations</h3>';
- block+='<table class="min-w-full border mb-4"><tr><th>Country</th><th>Source</th><th>Qualified</th><th>Avg Days</th></tr>';
- slowest.forEach(r=>block+=`<tr><td>${r.country}</td><td>${r.source}</td><td>${r.q}</td><td>${r.avg.toFixed(1)}</td></tr>`);
- block+='</table>';
-
- const agingRows=Object.entries(aging).map(([c,v])=>({
-   country:c, leads:v.leads, avg:v.days/v.leads
- })).sort((a,b)=>b.avg-a.avg).slice(0,10);
-
- block+='<h3 class="text-lg font-bold mb-2">🔥 Highest Aging Countries</h3>';
- block+='<table class="min-w-full border"><tr><th>Country</th><th>Active Leads</th><th>Avg Aging Days</th></tr>';
- agingRows.forEach(r=>block+=`<tr><td>${r.country}</td><td>${r.leads}</td><td>${r.avg.toFixed(1)}</td></tr>`);
- block+='</table></div>';
 
  el.innerHTML += block;
 }
+
 
 
 function calculateDashboard() {
