@@ -1,4 +1,4 @@
-4.0bR6_4
+4.0bR6_4_1
 <!DOCTYPE html>
 <html lang="en">
 
@@ -890,48 +890,61 @@ function renderLeadAgingV2(){
 
 
 
+
 function renderQualifiedVelocity(){
  const el=document.getElementById('qualifiedVelocityPanel');
  if(!el) return;
  if(!leadSummaryData.length){ el.innerHTML='No lead summary loaded'; return; }
 
- const matrix={};
+ const schoolMap={}, progMap={};
 
  leadSummaryData.forEach(r=>{
    if(String(r['Lead Status']||'').trim()!=='Qualified') return;
 
    const school=r['Business Unit']||'Unknown';
+   const prog=r['Programme']||'Unknown';
    const c=new Date(r['Create Date']);
    const m=new Date(r['Last Modified']);
    if(isNaN(c)||isNaN(m)) return;
 
    const days=Math.floor((m-c)/86400000);
 
-   if(!matrix[school]){
-      matrix[school]={qualified:0,totalDays:0,b:[0,0,0,0]};
-   }
+   if(!schoolMap[school]) schoolMap[school]={q:0,d:0};
+   schoolMap[school].q++;
+   schoolMap[school].d+=days;
 
-   matrix[school].qualified++;
-   matrix[school].totalDays+=days;
+   const key=school+'||'+prog;
+   if(!progMap[key]) progMap[key]={school:school,prog:prog,q:0,d:0,b:[0,0,0,0]};
 
-   if(days<=7) matrix[school].b[0]++;
-   else if(days<=30) matrix[school].b[1]++;
-   else if(days<=60) matrix[school].b[2]++;
-   else matrix[school].b[3]++;
+   progMap[key].q++;
+   progMap[key].d+=days;
+
+   if(days<=7) progMap[key].b[0]++;
+   else if(days<=30) progMap[key].b[1]++;
+   else if(days<=60) progMap[key].b[2]++;
+   else progMap[key].b[3]++;
  });
 
  let html='<div class="grid md:grid-cols-3 gap-4 mb-4">';
- Object.entries(matrix).forEach(([s,v])=>{
-   const avg=v.qualified?(v.totalDays/v.qualified).toFixed(1):0;
-   html+=`<div class="border rounded p-4"><div class="font-semibold">${s}</div><div>Qualified Leads: ${v.qualified}</div><div>Avg Days: ${avg}</div></div>`;
+ Object.entries(schoolMap).forEach(([s,v])=>{
+   html+=`<div class="border rounded p-4"><div class="font-semibold">${s}</div><div>Qualified Leads: ${v.q}</div><div>Avg Days: ${(v.d/v.q).toFixed(1)}</div></div>`;
  });
  html+='</div>';
 
- html+='<table class="min-w-full border"><tr><th class="border p-2">School</th><th class="border p-2">0-7 Days</th><th class="border p-2">8-30 Days</th><th class="border p-2">31-60 Days</th><th class="border p-2">60+ Days</th></tr>';
- Object.entries(matrix).forEach(([s,v])=>{
-   html+=`<tr><td class="border p-2">${s}</td><td class="border p-2">${v.b[0]}</td><td class="border p-2">${v.b[1]}</td><td class="border p-2">${v.b[2]}</td><td class="border p-2">${v.b[3]}</td></tr>`;
+ ['InterActive','LSBF Professional Qualifications','LSBF Executive Education'].forEach(sc=>{
+   const rows=Object.values(progMap).filter(x=>x.school===sc).sort((a,b)=>b.q-a.q);
+   if(!rows.length) return;
+
+   html+=`<h3 class="text-lg font-bold mt-4 mb-2">${sc}</h3>`;
+   html+='<table class="min-w-full border mb-4"><tr><th class="border p-2">Programme</th><th class="border p-2">Qualified</th><th class="border p-2">Avg Days</th><th class="border p-2">0-7</th><th class="border p-2">8-30</th><th class="border p-2">31-60</th><th class="border p-2">60+</th></tr>';
+
+   rows.forEach(r=>{
+      html+=`<tr><td class="border p-2">${r.prog}</td><td class="border p-2">${r.q}</td><td class="border p-2">${(r.d/r.q).toFixed(1)}</td><td class="border p-2">${r.b[0]}</td><td class="border p-2">${r.b[1]}</td><td class="border p-2">${r.b[2]}</td><td class="border p-2">${r.b[3]}</td></tr>`;
+   });
+
+   html+='</table>';
  });
- html+='</table>';
+
  el.innerHTML=html;
 }
 
