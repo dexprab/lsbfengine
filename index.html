@@ -1,4 +1,4 @@
-4.0bR6_4_7F
+4.0bR6_4_7_T
 <!DOCTYPE html>
 <html lang="en">
 
@@ -519,40 +519,32 @@ const QUARTER_END_DATES={
 
 let sourceChart = null;
 
-let qualifiedDateMap = {};
-let velocityMatchStats={qualified:0,matched:0};
-
+let qualifiedDateMap={};
 
 async function loadQualifiedHistory(){
  try{
-   const resp = await fetch('./data/Qualified_History/Lead_History_Qualified_FY26.xlsx');
-   const buf = await resp.arrayBuffer();
-   const wb = XLSX.read(buf,{type:'array'});
-   const ws = wb.Sheets[wb.SheetNames[0]];
-   const rows = XLSX.utils.sheet_to_json(ws,{defval:'', range:13});
-
-   qualifiedDateMap = {};
-
+   const resp=await fetch('./data/Qualified_History/Lead_History_Qualified_FY26.xlsx');
+   const buf=await resp.arrayBuffer();
+   const wb=XLSX.read(buf,{type:'array'});
+   const ws=wb.Sheets[wb.SheetNames[0]];
+   const rows=XLSX.utils.sheet_to_json(ws,{defval:'',range:13});
+   qualifiedDateMap={};
    rows.forEach(r=>{
-      const leadId = String(r['Lead ID  ↑']||'').trim();
+      const leadId=String(r['Lead ID  ↑']||r['Lead ID']||'').trim();
       if(!leadId || leadId==='Subtotal') return;
       if(String(r['New Value']||'').trim()!=='Qualified') return;
-
-      const qd = new Date(r['Edit Date']);
+      const qd=new Date(r['Edit Date']);
       if(!isNaN(qd)) qualifiedDateMap[leadId]=qd;
    });
-
-   console.log('Qualified history loaded', Object.keys(qualifiedDateMap).length);
- }catch(e){
-   console.warn('Qualified history unavailable',e);
- }
+   console.log('Qualified history loaded',Object.keys(qualifiedDateMap).length);
+ }catch(e){console.warn(e);}
 }
 
-function getQualifiedVelocityDays(row){
- const leadId = String(row['Lead ID']||'').trim();
- const qd = qualifiedDateMap[leadId];
- const cd = new Date(row['Create Date']);
- if(!qd || isNaN(cd)) return null;
+function getTrueVelocityDays(r){
+ const leadId=String(r['Lead ID']||'').trim();
+ const qd=qualifiedDateMap[leadId];
+ const cd=new Date(r['Create Date']);
+ if(!leadId || !qd || isNaN(cd)) return null;
  return Math.floor((qd-cd)/86400000);
 }
 
@@ -678,7 +670,7 @@ function handleSourceUpload(event) {
 
     sourceData = parsedData;
 
-    calculateDashboard();
+    loadQualifiedHistory().then(()=>calculateDashboard());
 
   };
 
@@ -1125,11 +1117,11 @@ console.log(
   renderStrategicInsights();
 
   renderAdvisorBySchool();
-loadQualifiedHistory().then(()=>{renderLeadValidation();
+renderLeadValidation();
 renderLeadAgingV2();
 renderQualifiedVelocity();
 renderCountrySourceVelocity();
-renderDormancy();});
+renderDormancy();
 
   //generateInsights();
 
@@ -2751,9 +2743,9 @@ function clearAllQuarters(){
  executiveData=[];
  leadSummaryData=[];
 
- loadQualifiedHistory().then(()=>{renderLeadValidation();
+ renderLeadValidation();
  renderLeadAging();
- renderDormancy();});
+ renderDormancy();
  calculateDashboard();
 }
 function selectLatestQuarter(){
