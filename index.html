@@ -1,4 +1,4 @@
-4.0bR6_4_8TVS
+4.0bR6_4_9
 <!DOCTYPE html>
 <html lang="en">
 
@@ -952,6 +952,49 @@ function renderQualifiedVelocity(){
    html+=`<div class="border rounded p-4"><div class="font-semibold">${s}</div><div>Qualified Leads: ${v.q}</div><div>True Avg Days: ${(v.d/v.q).toFixed(1)}</div></div>`;
  });
  html+='</div>';
+
+// Programme Velocity Diagnostics
+const bySchool={};
+Object.values(progMap).forEach(p=>{
+ if(!bySchool[p.school]) bySchool[p.school]=[];
+ bySchool[p.school].push(p);
+});
+
+Object.entries(bySchool).forEach(([school,rows])=>{
+ html+=`<h3 class="text-lg font-bold mt-4 mb-2">${school} - Programme Velocity</h3>
+ <table class="min-w-full border mb-4">
+ <tr>
+ <th class="border p-2">Programme</th>
+ <th class="border p-2">Qualified</th>
+ <th class="border p-2">Matched</th>
+ <th class="border p-2">Match %</th>
+ <th class="border p-2">Avg Days</th>
+ <th class="border p-2">0-7</th>
+ <th class="border p-2">8-30</th>
+ <th class="border p-2">31-60</th>
+ <th class="border p-2">60+</th>
+ </tr>`;
+
+ rows.sort((a,b)=>(b.q-a.q));
+
+ rows.forEach(r=>{
+   const matched=r.q;
+   const avg=r.q?(r.d/r.q):0;
+   html+=`<tr>
+   <td class="border p-2">${r.prog}</td>
+   <td class="border p-2">${r.q}</td>
+   <td class="border p-2">${matched}</td>
+   <td class="border p-2">${r.q?((matched/r.q)*100).toFixed(1):0}%</td>
+   <td class="border p-2">${avg.toFixed(1)}</td>
+   <td class="border p-2">${r.b[0]}</td>
+   <td class="border p-2">${r.b[1]}</td>
+   <td class="border p-2">${r.b[2]}</td>
+   <td class="border p-2">${r.b[3]}</td>
+   </tr>`;
+ });
+ html+='</table>';
+});
+
  el.innerHTML=html;
 }
 
