@@ -1,4 +1,4 @@
-4.0bR6_5_3
+4.0bR6_5_3B
 <!DOCTYPE html>
 <html lang="en">
 
@@ -125,11 +125,7 @@ function restoreSection(id){
 .toggle-header{cursor:pointer;font-weight:700;font-size:1.25rem;margin-bottom:12px}
 .school-content.collapsed{display:none}
 .school-toggle{cursor:pointer;font-weight:600;margin:10px 0}
-
-.collapsed-default{display:none}
-.section-toggle-btn{cursor:pointer;font-weight:700;padding:8px 0}
 </style>
-
 
 <style>
 .help-box{background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:12px}
@@ -150,6 +146,15 @@ const APP_CONFIG = {
 function toggleHelp(id){
  const el=document.getElementById(id);
  if(el) el.style.display=(el.style.display==='none'?'block':'none');
+}
+</script>
+
+
+<script>
+function toggleSmartSection(id){
+ const el=document.getElementById(id);
+ if(!el) return;
+ el.style.display=(el.style.display==='none'?'block':'none');
 }
 </script>
 
@@ -301,7 +306,6 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 <h2 class="text-xl font-semibold mb-4">Executive Summary</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures overall business performance. Calculated using aggregated leads, qualified leads and qualification rate.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded from benchmark calculations.</div>
 <div id="executiveSummary" class="grid md:grid-cols-4 gap-4"></div>
 </div>
-<div class="bg-white rounded-2xl shadow p-4"><div class="section-toggle-btn" onclick="toggleSection('opsBlock')">▼ Operational Intelligence</div><div id="opsBlock" class="section-content collapsed">
 <div id="leadValidationSection" class="bg-white rounded-2xl shadow p-6">
 <h2 class="text-xl font-semibold mb-4">Lead Summary Validation</h2><div id='leadSummaryQuarterInfo' class='text-sm text-gray-500 mb-2'></div>
 <div id="leadValidationPanel"></div>
@@ -313,7 +317,7 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 </div>
 
 <div id="qualifiedVelocitySection" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Qualified Lead Velocity</h2>
+<h2 class="text-xl font-semibold mb-4">Qualified Lead Velocity</h2><div class='text-sm text-gray-500 mb-2'>School velocity and velocity mix shown by default. Detailed programme and opportunity intelligence can be expanded below.</div>
 <div id="qualifiedVelocityPanel"></div>
 </div>
 
@@ -447,8 +451,6 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 
 
 
-</div></div>
-<div class="bg-white rounded-2xl shadow p-4"><div class="section-toggle-btn" onclick="toggleSection('advisorBlock')">▼ Advisor Intelligence</div><div id="advisorBlock" class="section-content collapsed">
 <div id="sourceeff" class="bg-white rounded-2xl shadow p-6">
 <h2 class="text-xl font-semibold mb-4">Source Efficiency</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures lead quality by source. Calculated as Qualified Leads ÷ Total Leads.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded.</div>
 <div id="sourceEfficiencyTable"></div>
@@ -464,7 +466,6 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 <div id="advisorQuadrantTable"></div>
 </div>
 
-</div></div>
 <div class="bg-white rounded-2xl shadow p-6">
 <h2 class="text-xl font-semibold mb-4">Executive Diagnosis</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Identifies the primary business bottleneck. Compares Hidden Gems and Coaching Opportunities.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded from benchmark calculations.</div>
 <div id="executiveDiagnosis"></div>
@@ -3156,30 +3157,57 @@ function loadAdvisorArrayBuffer(buffer,bu){
 }
 </script>
 <script>
-document.addEventListener('DOMContentLoaded',()=>{
- setTimeout(()=>{
-   const q=document.querySelector('#qualifiedVelocityPanel');
-   if(q){
-      const heads=q.querySelectorAll('h3');
-      heads.forEach(h=>{
-        if(h.innerText.includes('Programme Velocity') || h.innerText.includes('Opportunity Intelligence')){
-           let n=h.nextElementSibling;
-           while(n && n.tagName!=='H3'){
-              n.style.display='none';
-              n=n.nextElementSibling;
-           }
-           h.style.cursor='pointer';
-           h.innerText='▼ '+h.innerText;
-           h.onclick=()=>{
-             let x=h.nextElementSibling;
-             const show=(x && x.style.display==='none');
-             while(x && x.tagName!=='H3'){x.style.display=show?'':'none';x=x.nextElementSibling;}
-           };
-        }
-      });
+setTimeout(()=>{
+ const q=document.getElementById('qualifiedVelocityPanel');
+ if(q){
+   q.querySelectorAll('h3').forEach(h=>{
+      const txt=h.innerText||'';
+      if(txt.includes('Programme Velocity') || txt.includes('Opportunity Intelligence')){
+         let wrap=document.createElement('div');
+         wrap.className='border rounded p-2 my-2';
+         h.parentNode.insertBefore(wrap,h);
+         wrap.appendChild(h);
+
+         let content=document.createElement('div');
+         content.style.display='none';
+         wrap.appendChild(content);
+
+         let n=h.nextElementSibling;
+         while(n && n.tagName!=='H3'){
+            let nx=n.nextElementSibling;
+            content.appendChild(n);
+            n=nx;
+         }
+
+         h.innerText='▼ '+txt;
+         h.style.cursor='pointer';
+         h.onclick=()=>{
+            content.style.display=content.style.display==='none'?'block':'none';
+         };
+      }
+   });
+ }
+
+ const uq=document.getElementById('unqualifiedPanel');
+ if(uq){
+   const children=[...uq.children];
+   if(children.length>1){
+      const box=document.createElement('div');
+      box.className='border rounded p-2 my-2';
+      box.innerHTML="<div style='cursor:pointer;font-weight:bold'>▼ Detailed Leakage Analysis</div>";
+      const body=document.createElement('div');
+      body.style.display='none';
+      box.appendChild(body);
+
+      for(let i=1;i<children.length;i++) body.appendChild(children[i]);
+
+      uq.appendChild(box);
+      box.firstChild.onclick=()=>{
+         body.style.display=body.style.display==='none'?'block':'none';
+      };
    }
- },1500);
-});
+ }
+},2000);
 </script></body>
 </html>
 
