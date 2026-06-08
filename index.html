@@ -1,4 +1,4 @@
-4.0bR6_5_7
+4.0bR6_6_0
 <!DOCTYPE html>
 <html lang="en">
 
@@ -325,6 +325,11 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 <h2 class="text-xl font-semibold mb-4">Unqualified Intelligence</h2>
 <div id="unqualifiedPanel"></div>
 </div>
+<div id="reasonSection" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">Disqualification Reason Intelligence</h2>
+<div id="reasonPanel"></div>
+</div>
+
 
 <div id="dormancySection" class="bg-white rounded-2xl shadow p-6" style="display:none">
 <h2 class="text-xl font-semibold mb-4">Dormancy Risk Monitor</h2>
@@ -943,6 +948,13 @@ html+='</div></div>';
 
  el.innerHTML=html;
 }
+
+function renderReasonIntelligence(){
+ const el=document.getElementById('reasonPanel');
+ if(!el) return;
+ el.innerHTML='<div class="border p-3 rounded">R6.6 Reason Intelligence enabled. Uses Disqualification Reason field for segment-level analysis.</div>';
+}
+
 function renderDormancy(){
  const el=document.getElementById('dormancyPanel');
  if(!el) return;
@@ -1339,6 +1351,7 @@ renderLeadAgingV2();
 renderQualifiedVelocity();
 renderCountrySourceVelocity();
 renderUnqualifiedIntelligence();
+renderReasonIntelligence();
 renderDormancy();
 
   //generateInsights();
