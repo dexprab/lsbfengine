@@ -1,4 +1,4 @@
-4.0bR6_6_0
+4.0bR6_6_1
 <!DOCTYPE html>
 <html lang="en">
 
@@ -325,11 +325,12 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 <h2 class="text-xl font-semibold mb-4">Unqualified Intelligence</h2>
 <div id="unqualifiedPanel"></div>
 </div>
+
+
 <div id="reasonSection" class="bg-white rounded-2xl shadow p-6">
 <h2 class="text-xl font-semibold mb-4">Disqualification Reason Intelligence</h2>
 <div id="reasonPanel"></div>
 </div>
-
 
 <div id="dormancySection" class="bg-white rounded-2xl shadow p-6" style="display:none">
 <h2 class="text-xl font-semibold mb-4">Dormancy Risk Monitor</h2>
@@ -952,7 +953,60 @@ html+='</div></div>';
 function renderReasonIntelligence(){
  const el=document.getElementById('reasonPanel');
  if(!el) return;
- el.innerHTML='<div class="border p-3 rounded">R6.6 Reason Intelligence enabled. Uses Disqualification Reason field for segment-level analysis.</div>';
+
+ const segMap={'InterActive':{},'LSBF Professional Qualifications':{}};
+ let html='';
+
+ leadSummaryData.forEach(r=>{
+   if(isExcludedOwner(r['Lead Owner'])) return;
+   if(String(r['Lead Status']||'').trim()!=='Unqualified') return;
+
+   let reason=(r['Disqualification Reason']||'Unknown').toString().trim();
+   if(!reason) reason='Unknown';
+
+   const school=r['Business Unit']||'';
+   const prog=(r['Programme']||'').trim();
+
+   let seg=null;
+   if(school==='InterActive'){
+      if(prog.startsWith('Master')||prog.startsWith('MSc')) seg='Masters';
+      else if(prog.startsWith('Doctor')) seg='DBA';
+      else if(prog.startsWith('BSc')) seg='UG';
+   } else if(school==='LSBF Professional Qualifications'){
+      seg=prog.includes('+')?'ACCA + Masters':'ACCA';
+   }
+   if(!seg) return;
+
+   if(!segMap[school][seg]) segMap[school][seg]={unq:0,reasons:{}};
+   segMap[school][seg].unq++;
+   segMap[school][seg].reasons[reason]=(segMap[school][seg].reasons[reason]||0)+1;
+ });
+
+ Object.entries(segMap).forEach(([school,data])=>{
+   const total=Object.values(data).reduce((s,v)=>s+v.unq,0);
+   if(!total) return;
+
+   html+=`<h3 class="text-lg font-bold mt-4 mb-2">${school} - Reason Mix</h3>
+   <table class="min-w-full border mb-4">
+   <tr><th class="border p-2">Segment</th><th class="border p-2">Unqualified</th><th class="border p-2">Top Reason</th><th class="border p-2">Reason Share %</th><th class="border p-2">Contribution %</th></tr>`;
+
+   Object.entries(data).forEach(([seg,v])=>{
+      const top=Object.entries(v.reasons).sort((a,b)=>b[1]-a[1])[0];
+      const reason=top?top[0]:'Unknown';
+      const share=top?((top[1]/v.unq)*100):0;
+
+      html+=`<tr>
+      <td class="border p-2">${seg}</td>
+      <td class="border p-2">${v.unq}</td>
+      <td class="border p-2">${reason}</td>
+      <td class="border p-2">${share.toFixed(1)}%</td>
+      <td class="border p-2">${((v.unq/total)*100).toFixed(1)}%</td>
+      </tr>`;
+   });
+   html+='</table>';
+ });
+
+ el.innerHTML=html || '<div>No disqualification reason data found.</div>';
 }
 
 function renderDormancy(){
