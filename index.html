@@ -1,4 +1,4 @@
-4.0bR6_5_1
+4.0bR6_5_2
 <!DOCTYPE html>
 <html lang="en">
 
@@ -1010,7 +1010,62 @@ function renderQualifiedVelocity(){
  Object.entries(schoolMap).forEach(([s,v])=>{
    html+=`<div class="border rounded p-4"><div class="font-semibold">${s}</div><div>Qualified Leads: ${v.q}</div><div>True Avg Days: ${(v.d/v.q).toFixed(1)}</div></div>`;
  });
- html+='</div>';
+ 
+html+='</div>';
+
+// Velocity Mix
+const segMap={
+ 'InterActive':{},
+ 'LSBF Professional Qualifications':{}
+};
+
+leadSummaryData.forEach(r=>{
+ if(String(r['Lead Status']||'').trim()!=='Qualified') return;
+ const days=getTrueVelocityDays(r);
+ if(days===null) return;
+
+ const school=r['Business Unit']||'';
+ const prog=(r['Programme']||'').trim();
+ let seg=null;
+
+ if(school==='InterActive'){
+   if(prog.startsWith('Master') || prog.startsWith('MSc')) seg='Masters';
+   else if(prog.startsWith('Doctor')) seg='DBA';
+   else if(prog.startsWith('BSc')) seg='UG';
+ }
+ else if(school==='LSBF Professional Qualifications'){
+   seg = prog.includes('+') ? 'ACCA + Masters' : 'ACCA';
+ }
+
+ if(!seg) return;
+ if(!segMap[school][seg]) segMap[school][seg]={q:0,d:0};
+ segMap[school][seg].q++;
+ segMap[school][seg].d+=days;
+});
+
+Object.entries(segMap).forEach(([school,data])=>{
+ const total=Object.values(data).reduce((s,v)=>s+v.q,0);
+ if(!total) return;
+
+ html+=`<h3 class="text-lg font-bold mt-4 mb-2">${school} - Velocity Mix</h3>
+ <table class="min-w-full border mb-4">
+ <tr>
+ <th class="border p-2">Segment</th>
+ <th class="border p-2">Qualified</th>
+ <th class="border p-2">Contribution %</th>
+ <th class="border p-2">Avg Days</th>
+ </tr>`;
+
+ Object.entries(data).forEach(([seg,v])=>{
+   html+=`<tr>
+   <td class="border p-2">${seg}</td>
+   <td class="border p-2">${v.q}</td>
+   <td class="border p-2">${((v.q/total)*100).toFixed(1)}%</td>
+   <td class="border p-2">${(v.d/v.q).toFixed(1)}</td>
+   </tr>`;
+ });
+ html+='</table>';
+});
 
 // Programme Velocity Diagnostics
 const bySchool={};
