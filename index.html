@@ -1,4 +1,4 @@
-4.0bR6_5_4
+4.0bR6_5_5
 <!DOCTYPE html>
 <html lang="en">
 
@@ -828,58 +828,92 @@ el.innerHTML=`<div class='grid md:grid-cols-4 gap-4'>
 }
 
 
+
 function renderUnqualifiedIntelligence(){
  const el=document.getElementById('unqualifiedPanel');
  if(!el) return;
- const src={},country={},prog={},adv={},combo={};
  let totalLeads=0,totalUnq=0;
+ const sourceMix={}, countryMix={}, progMix={};
+ const segMap={'InterActive':{},'LSBF Professional Qualifications':{}};
+
  leadSummaryData.forEach(r=>{
    if(isExcludedOwner(r['Lead Owner'])) return;
    totalLeads++;
    const status=String(r['Lead Status']||'').trim();
-   const s=r['Lead Source']||'Unknown';
-   const c=r['Country (text only)']||'Unknown';
-   const p=r['Programme']||'Unknown';
-   const a=r['Lead Owner']||'Unknown';
-   [src,country,prog,adv].forEach(()=>{});
-   if(!src[s]) src[s]={leads:0,unq:0};
-   if(!country[c]) country[c]={leads:0,unq:0};
-   if(!prog[p]) prog[p]={leads:0,unq:0};
-   if(!adv[a]) adv[a]={leads:0,unq:0,q:0};
-   src[s].leads++; country[c].leads++; prog[p].leads++; adv[a].leads++;
-   if(status==='Qualified') adv[a].q++;
-   if(status==='Unqualified'){
-      totalUnq++;
-      src[s].unq++; country[c].unq++; prog[p].unq++; adv[a].unq++;
-      const k=c+'||'+s;
-      if(!combo[k]) combo[k]={country:c,source:s,leads:0,unq:0};
-      combo[k].unq++;
+   if(status!=='Unqualified') return;
+   totalUnq++;
+
+   const desc=(r['Lead Source Description']||'').toString().trim();
+   const src=desc?((r['Lead Source']||'Unknown')+' | '+desc):(r['Lead Source']||'Unknown');
+   const country=r['Country (text only)']||'Unknown';
+   const prog=r['Programme']||'Unknown';
+
+   if(!sourceMix[src]) sourceMix[src]={leads:0,unq:0};
+   if(!countryMix[country]) countryMix[country]={leads:0,unq:0};
+   if(!progMix[prog]) progMix[prog]={leads:0,unq:0};
+
+   sourceMix[src].unq++;
+   countryMix[country].unq++;
+   progMix[prog].unq++;
+
+   const school=r['Business Unit']||'';
+   let seg=null;
+   if(school==='InterActive'){
+      if(prog.startsWith('Master')||prog.startsWith('MSc')) seg='Masters';
+      else if(prog.startsWith('Doctor')) seg='DBA';
+      else if(prog.startsWith('BSc')) seg='UG';
+   } else if(school==='LSBF Professional Qualifications'){
+      seg=prog.includes('+')?'ACCA + Masters':'ACCA';
    }
-   const k=c+'||'+s;
-   if(!combo[k]) combo[k]={country:c,source:s,leads:0,unq:0};
-   combo[k].leads++;
+   if(seg){
+      if(!segMap[school][seg]) segMap[school][seg]={unq:0};
+      segMap[school][seg].unq++;
+   }
  });
- function tbl(title,obj,type){
-  let rows=Object.entries(obj).map(([k,v])=>({name:k,...v,pct:v.leads?(v.unq/v.leads*100):0}))
-   .sort((a,b)=>b.unq-a.unq).slice(0,10);
-  return `<h3 class="font-bold mt-4 mb-2">${title}</h3><table class="min-w-full border mb-4"><tr><th class="border p-2">${type}</th><th class="border p-2">Leads</th><th class="border p-2">Unqualified</th><th class="border p-2">Unqualified %</th></tr>`+
-  rows.map(r=>`<tr><td class="border p-2">${r.name}</td><td class="border p-2">${r.leads}</td><td class="border p-2">${r.unq}</td><td class="border p-2">${r.pct.toFixed(1)}%</td></tr>`).join('')+'</table>';
- }
+
+ leadSummaryData.forEach(r=>{
+   if(isExcludedOwner(r['Lead Owner'])) return;
+   const desc=(r['Lead Source Description']||'').toString().trim();
+   const src=desc?((r['Lead Source']||'Unknown')+' | '+desc):(r['Lead Source']||'Unknown');
+   const country=r['Country (text only)']||'Unknown';
+   const prog=r['Programme']||'Unknown';
+   if(sourceMix[src]) sourceMix[src].leads++;
+   if(countryMix[country]) countryMix[country].leads++;
+   if(progMix[prog]) progMix[prog].leads++;
+ });
+
  let html=`<div class="grid md:grid-cols-4 gap-3 mb-4">
  <div class="border p-3 rounded"><b>Total Unqualified</b><br>${totalUnq}</div>
  <div class="border p-3 rounded"><b>Unqualified %</b><br>${totalLeads?((totalUnq/totalLeads)*100).toFixed(1):0}%</div>
  <div class="border p-3 rounded"><b>Active Leads</b><br>${totalLeads}</div>
  <div class="border p-3 rounded"><b>Lost Opportunities</b><br>${totalUnq}</div></div>`;
- html+=tbl('Unqualified Source Intelligence',src,'Source');
- html+=tbl('Unqualified Country Intelligence',country,'Country');
- html+=tbl('Unqualified Programme Intelligence',prog,'Programme');
- let advRows=Object.entries(adv).map(([k,v])=>({name:k,...v,leak:(v.q+v.unq)?(v.unq/(v.q+v.unq)*100):0})).sort((a,b)=>b.leak-a.leak).slice(0,10);
- html+='<h3 class="font-bold mt-4 mb-2">Advisor Leakage Analysis</h3><table class="min-w-full border mb-4"><tr><th class="border p-2">Advisor</th><th class="border p-2">Qualified</th><th class="border p-2">Unqualified</th><th class="border p-2">Leakage %</th></tr>'+
- advRows.map(r=>`<tr><td class="border p-2">${r.name}</td><td class="border p-2">${r.q}</td><td class="border p-2">${r.unq}</td><td class="border p-2">${r.leak.toFixed(1)}%</td></tr>`).join('')+'</table>';
- let lost=Object.values(combo).map(x=>({...x,pct:x.leads?(x.unq/x.leads*100):0})).sort((a,b)=>b.unq-a.unq).slice(0,10);
- html+='<h3 class="font-bold mt-4 mb-2">Lost Opportunity Intelligence</h3><table class="min-w-full border"><tr><th class="border p-2">Country</th><th class="border p-2">Source</th><th class="border p-2">Leads</th><th class="border p-2">Unqualified</th><th class="border p-2">Leakage %</th></tr>'+
- lost.map(r=>`<tr><td class="border p-2">${r.country}</td><td class="border p-2">${r.source}</td><td class="border p-2">${r.leads}</td><td class="border p-2">${r.unq}</td><td class="border p-2">${r.pct.toFixed(1)}%</td></tr>`).join('')+'</table>';
- html+='</div></div>'; el.innerHTML=html;
+
+ Object.entries(segMap).forEach(([school,data])=>{
+   const total=Object.values(data).reduce((s,v)=>s+v.unq,0);
+   if(!total) return;
+   html+=`<h3 class="text-lg font-bold mt-4 mb-2">${school} - Unqualified Mix</h3><table class="min-w-full border mb-4"><tr><th class="border p-2">Segment</th><th class="border p-2">Unqualified</th><th class="border p-2">Contribution %</th></tr>`;
+   Object.entries(data).forEach(([seg,v])=>{
+      html+=`<tr><td class="border p-2">${seg}</td><td class="border p-2">${v.unq}</td><td class="border p-2">${((v.unq/total)*100).toFixed(1)}%</td></tr>`;
+   });
+   html+='</table>';
+ });
+
+ function mixTable(title,obj,col){
+   const rows=Object.entries(obj).map(([k,v])=>({
+      name:k, leads:v.leads, unq:v.unq,
+      pct:v.leads?(v.unq/v.leads*100):0,
+      contrib:totalUnq?(v.unq/totalUnq*100):0
+   })).sort((a,b)=>b.contrib-a.contrib).slice(0,15);
+   html+=`<h3 class="font-bold mt-4 mb-2">${title}</h3><table class="min-w-full border mb-4"><tr><th class="border p-2">${col}</th><th class="border p-2">Leads</th><th class="border p-2">Unqualified</th><th class="border p-2">Unqualified %</th><th class="border p-2">Contribution %</th></tr>`;
+   rows.forEach(r=>{
+      html+=`<tr><td class="border p-2">${r.name}</td><td class="border p-2">${r.leads}</td><td class="border p-2">${r.unq}</td><td class="border p-2">${r.pct.toFixed(1)}%</td><td class="border p-2">${r.contrib.toFixed(1)}%</td></tr>`;
+   });
+   html+='</table>';
+ }
+ mixTable('Unqualified Source Mix',sourceMix,'Source');
+ mixTable('Unqualified Programme Mix',progMix,'Programme');
+ mixTable('Unqualified Country Mix',countryMix,'Country');
+ el.innerHTML=html;
 }
 function renderDormancy(){
  const el=document.getElementById('dormancyPanel');
