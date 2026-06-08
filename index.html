@@ -1,4 +1,4 @@
-4.0bR6_5_2
+4.0bR6_5_3
 <!DOCTYPE html>
 <html lang="en">
 
@@ -125,7 +125,11 @@ function restoreSection(id){
 .toggle-header{cursor:pointer;font-weight:700;font-size:1.25rem;margin-bottom:12px}
 .school-content.collapsed{display:none}
 .school-toggle{cursor:pointer;font-weight:600;margin:10px 0}
+
+.collapsed-default{display:none}
+.section-toggle-btn{cursor:pointer;font-weight:700;padding:8px 0}
 </style>
+
 
 <style>
 .help-box{background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:12px}
@@ -297,6 +301,7 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 <h2 class="text-xl font-semibold mb-4">Executive Summary</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures overall business performance. Calculated using aggregated leads, qualified leads and qualification rate.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded from benchmark calculations.</div>
 <div id="executiveSummary" class="grid md:grid-cols-4 gap-4"></div>
 </div>
+<div class="bg-white rounded-2xl shadow p-4"><div class="section-toggle-btn" onclick="toggleSection('opsBlock')">▼ Operational Intelligence</div><div id="opsBlock" class="section-content collapsed">
 <div id="leadValidationSection" class="bg-white rounded-2xl shadow p-6">
 <h2 class="text-xl font-semibold mb-4">Lead Summary Validation</h2><div id='leadSummaryQuarterInfo' class='text-sm text-gray-500 mb-2'></div>
 <div id="leadValidationPanel"></div>
@@ -442,6 +447,8 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 
 
 
+</div></div>
+<div class="bg-white rounded-2xl shadow p-4"><div class="section-toggle-btn" onclick="toggleSection('advisorBlock')">▼ Advisor Intelligence</div><div id="advisorBlock" class="section-content collapsed">
 <div id="sourceeff" class="bg-white rounded-2xl shadow p-6">
 <h2 class="text-xl font-semibold mb-4">Source Efficiency</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures lead quality by source. Calculated as Qualified Leads ÷ Total Leads.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded.</div>
 <div id="sourceEfficiencyTable"></div>
@@ -457,6 +464,7 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 <div id="advisorQuadrantTable"></div>
 </div>
 
+</div></div>
 <div class="bg-white rounded-2xl shadow p-6">
 <h2 class="text-xl font-semibold mb-4">Executive Diagnosis</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Identifies the primary business bottleneck. Compares Hidden Gems and Coaching Opportunities.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded from benchmark calculations.</div>
 <div id="executiveDiagnosis"></div>
@@ -3147,6 +3155,31 @@ function loadAdvisorArrayBuffer(buffer,bu){
  advisorData=[...(interactiveData||[]),...(pqData||[]),...(executiveData||[])];
 }
 </script>
-</body>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ setTimeout(()=>{
+   const q=document.querySelector('#qualifiedVelocityPanel');
+   if(q){
+      const heads=q.querySelectorAll('h3');
+      heads.forEach(h=>{
+        if(h.innerText.includes('Programme Velocity') || h.innerText.includes('Opportunity Intelligence')){
+           let n=h.nextElementSibling;
+           while(n && n.tagName!=='H3'){
+              n.style.display='none';
+              n=n.nextElementSibling;
+           }
+           h.style.cursor='pointer';
+           h.innerText='▼ '+h.innerText;
+           h.onclick=()=>{
+             let x=h.nextElementSibling;
+             const show=(x && x.style.display==='none');
+             while(x && x.tagName!=='H3'){x.style.display=show?'':'none';x=x.nextElementSibling;}
+           };
+        }
+      });
+   }
+ },1500);
+});
+</script></body>
 </html>
 
