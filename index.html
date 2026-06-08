@@ -1,4 +1,4 @@
-4.0bR6_6_2
+4.0bR6_7
 <!DOCTYPE html>
 <html lang="en">
 
@@ -321,6 +321,12 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 <div id="qualifiedVelocityPanel"></div>
 </div>
 
+
+<div id="revenueAttributionSection" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">Revenue Attribution Intelligence</h2>
+<div id="revenueAttributionPanel"></div>
+</div>
+
 <div id="unqualifiedSection" class="bg-white rounded-2xl shadow p-6">
 <h2 class="text-xl font-semibold mb-4">Unqualified Intelligence</h2>
 <div id="unqualifiedPanel"></div>
@@ -531,6 +537,8 @@ let sourceData = [];
 let advisorData = [];
 let leadSummaryData = [];
 let qualifiedDateMap={};
+let qualifiedOppData=[];
+let wonOppData=[];
 async function loadQualifiedHistory(){
  try{
    const resp=await fetch('./data/Qualified_History/Lead_History_Qualified_FY26.xlsx');
@@ -555,6 +563,68 @@ function getTrueVelocityDays(r){
  const cd=new Date(r['Create Date']);
  if(!qd || isNaN(cd)) return null;
  return Math.floor((qd-cd)/86400000);
+}
+
+
+async function loadQualifiedOppHistory(){
+ try{
+   const resp=await fetch('./data/Qualified_History/Lead_Qualified_Opp_FY26.xlsx');
+   const buf=await resp.arrayBuffer();
+   const wb=XLSX.read(buf,{type:'array'});
+   qualifiedOppData=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+ }catch(e){console.warn(e);}
+}
+async function loadWonOppHistory(){
+ try{
+   const resp=await fetch('./data/Qualified_History/OPP_ALL_WON_FY26.xlsx');
+   const buf=await resp.arrayBuffer();
+   const wb=XLSX.read(buf,{type:'array'});
+   wonOppData=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+ }catch(e){console.warn(e);}
+}
+function renderRevenueAttribution(){
+ const el=document.getElementById('revenueAttributionPanel');
+ if(!el) return;
+ if(!qualifiedOppData.length||!wonOppData.length){el.innerHTML='Revenue files not loaded';return;}
+ const fy26=new Set();
+ qualifiedOppData.forEach(r=>{
+   const id=String(r['Opportunity ID']||'').trim();
+   const st=String(r['Stage']||'').toLowerCase();
+   if(id && st.includes('won')) fy26.add(id);
+ });
+ let total=0, current=0;
+ const segs={};
+ function seg(bu,p){
+   p=(p||'').trim();
+   if(bu==='InterActive'){
+    if(p.startsWith('Master')||p.startsWith('MSc')) return 'Masters';
+    if(p.startsWith('Doctor')) return 'DBA';
+    if(p.startsWith('BSc')) return 'UG';
+   }
+   if(bu==='LSBF Professional Qualifications') return p.includes('+')?'ACCA + Masters':'ACCA';
+   return null;
+ }
+ wonOppData.forEach(r=>{
+   const id=String(r['Opportunity ID']||'').trim();
+   const rev=Number(r['Sales Price']||0);
+   total+=rev;
+   const s=seg(r['Business Unit']||'',r['Programme']||'');
+   if(!s) return;
+   if(!segs[s]) segs[s]={total:0,current:0};
+   segs[s].total+=rev;
+   if(fy26.has(id)){segs[s].current+=rev; current+=rev;}
+ });
+ let html=`<div class="grid md:grid-cols-4 gap-4 mb-4">
+ <div class="border p-3 rounded"><b>Total Revenue</b><br>£${Math.round(total).toLocaleString()}</div>
+ <div class="border p-3 rounded"><b>FY26 Leads</b><br>£${Math.round(current).toLocaleString()}</div>
+ <div class="border p-3 rounded"><b>Previous Cohorts</b><br>£${Math.round(total-current).toLocaleString()}</div>
+ <div class="border p-3 rounded"><b>FY26 Share</b><br>${total?((current/total)*100).toFixed(1):0}%</div></div>`;
+ html+='<table class="min-w-full border"><tr><th class="border p-2">Segment</th><th class="border p-2">Total Revenue</th><th class="border p-2">FY26 Revenue</th><th class="border p-2">Previous Revenue</th><th class="border p-2">FY26 Share</th></tr>';
+ Object.entries(segs).forEach(([k,v])=>{
+ html+=`<tr><td class="border p-2">${k}</td><td class="border p-2">£${Math.round(v.total).toLocaleString()}</td><td class="border p-2">£${Math.round(v.current).toLocaleString()}</td><td class="border p-2">£${Math.round(v.total-v.current).toLocaleString()}</td><td class="border p-2">${v.total?((v.current/v.total)*100).toFixed(1):0}%</td></tr>`;
+ });
+ html+='</table>';
+ el.innerHTML=html;
 }
 
 const QUARTER_END_DATES={
@@ -1363,6 +1433,8 @@ function renderCountrySourceVelocity(){
 
 async function calculateDashboard() {
 await loadQualifiedHistory();
+await loadQualifiedOppHistory();
+await loadWonOppHistory();
 
   calculateKPIs();
 
@@ -1404,6 +1476,7 @@ console.log(
 renderLeadValidation();
 renderLeadAgingV2();
 renderQualifiedVelocity();
+renderRevenueAttribution();
 renderCountrySourceVelocity();
 renderUnqualifiedIntelligence();
 renderReasonIntelligence();
