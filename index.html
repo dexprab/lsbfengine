@@ -1,4 +1,4 @@
-4.0bR6_5_3B
+4.0bR6_5_4
 <!DOCTYPE html>
 <html lang="en">
 
@@ -151,10 +151,10 @@ function toggleHelp(id){
 
 
 <script>
-function toggleSmartSection(id){
+function toggleNativeCollapse(id){
  const el=document.getElementById(id);
  if(!el) return;
- el.style.display=(el.style.display==='none'?'block':'none');
+ el.style.display=(el.style.display==='none')?'block':'none';
 }
 </script>
 
@@ -317,7 +317,7 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 </div>
 
 <div id="qualifiedVelocitySection" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Qualified Lead Velocity</h2><div class='text-sm text-gray-500 mb-2'>School velocity and velocity mix shown by default. Detailed programme and opportunity intelligence can be expanded below.</div>
+<h2 class="text-xl font-semibold mb-4">Qualified Lead Velocity</h2>
 <div id="qualifiedVelocityPanel"></div>
 </div>
 
@@ -879,7 +879,7 @@ function renderUnqualifiedIntelligence(){
  let lost=Object.values(combo).map(x=>({...x,pct:x.leads?(x.unq/x.leads*100):0})).sort((a,b)=>b.unq-a.unq).slice(0,10);
  html+='<h3 class="font-bold mt-4 mb-2">Lost Opportunity Intelligence</h3><table class="min-w-full border"><tr><th class="border p-2">Country</th><th class="border p-2">Source</th><th class="border p-2">Leads</th><th class="border p-2">Unqualified</th><th class="border p-2">Leakage %</th></tr>'+
  lost.map(r=>`<tr><td class="border p-2">${r.country}</td><td class="border p-2">${r.source}</td><td class="border p-2">${r.leads}</td><td class="border p-2">${r.unq}</td><td class="border p-2">${r.pct.toFixed(1)}%</td></tr>`).join('')+'</table>';
- el.innerHTML=html;
+ html+='</div></div>'; el.innerHTML=html;
 }
 function renderDormancy(){
  const el=document.getElementById('dormancyPanel');
@@ -1076,6 +1076,10 @@ Object.entries(segMap).forEach(([school,data])=>{
  html+='</table>';
 });
 
+html+=`<div class="border rounded p-2 mb-3">
+<div onclick="toggleNativeCollapse('progVelocityBlock')" style="cursor:pointer;font-weight:bold">▼ Programme Velocity Details</div>
+<div id="progVelocityBlock" style="display:none">`;
+
 // Programme Velocity Diagnostics
 const bySchool={};
 Object.values(progMap).forEach(p=>{
@@ -1183,7 +1187,9 @@ function renderCountrySourceVelocity(){
       .sort((a,b)=> ((b.contribPct-a.contribPct)) || ((a.convPct-b.convPct)) || ((b.avgDays-a.avgDays)))
       .slice(0,10);
 
-   block+=`<h3 class="text-xl font-bold mt-6 mb-2">${school} - Opportunity Intelligence</h3>`;
+   block+=`<div class="border rounded p-2 mt-4 mb-2">
+<div onclick="toggleNativeCollapse('opp_${school.replace(/[^a-zA-Z0-9]/g,'_')}')" style="cursor:pointer;font-weight:bold">▼ ${school} - Opportunity Intelligence</div>
+<div id="opp_${school.replace(/[^a-zA-Z0-9]/g,'_')}" style="display:none">`;
 
    const renderTable=(title,data)=>{
       let h=`<h4 class="font-bold mt-3 mb-2">${title}</h4>
@@ -1220,7 +1226,7 @@ function renderCountrySourceVelocity(){
    };
 
    block+=renderTable('🚀 Scale Opportunities',scale);
-   block+=renderTable('⚠ Attention Required',attention);
+   block+=renderTable('⚠ Attention Required',attention); block+='</div></div>';
  });
 
  el.innerHTML += block;
@@ -3156,58 +3162,6 @@ function loadAdvisorArrayBuffer(buffer,bu){
  advisorData=[...(interactiveData||[]),...(pqData||[]),...(executiveData||[])];
 }
 </script>
-<script>
-setTimeout(()=>{
- const q=document.getElementById('qualifiedVelocityPanel');
- if(q){
-   q.querySelectorAll('h3').forEach(h=>{
-      const txt=h.innerText||'';
-      if(txt.includes('Programme Velocity') || txt.includes('Opportunity Intelligence')){
-         let wrap=document.createElement('div');
-         wrap.className='border rounded p-2 my-2';
-         h.parentNode.insertBefore(wrap,h);
-         wrap.appendChild(h);
-
-         let content=document.createElement('div');
-         content.style.display='none';
-         wrap.appendChild(content);
-
-         let n=h.nextElementSibling;
-         while(n && n.tagName!=='H3'){
-            let nx=n.nextElementSibling;
-            content.appendChild(n);
-            n=nx;
-         }
-
-         h.innerText='▼ '+txt;
-         h.style.cursor='pointer';
-         h.onclick=()=>{
-            content.style.display=content.style.display==='none'?'block':'none';
-         };
-      }
-   });
- }
-
- const uq=document.getElementById('unqualifiedPanel');
- if(uq){
-   const children=[...uq.children];
-   if(children.length>1){
-      const box=document.createElement('div');
-      box.className='border rounded p-2 my-2';
-      box.innerHTML="<div style='cursor:pointer;font-weight:bold'>▼ Detailed Leakage Analysis</div>";
-      const body=document.createElement('div');
-      body.style.display='none';
-      box.appendChild(body);
-
-      for(let i=1;i<children.length;i++) body.appendChild(children[i]);
-
-      uq.appendChild(box);
-      box.firstChild.onclick=()=>{
-         body.style.display=body.style.display==='none'?'block':'none';
-      };
-   }
- }
-},2000);
-</script></body>
+</body>
 </html>
 
