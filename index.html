@@ -1,4 +1,4 @@
-4.0bR6_5_5
+4.0bR6_5_6
 <!DOCTYPE html>
 <html lang="en">
 
@@ -910,9 +910,25 @@ function renderUnqualifiedIntelligence(){
    });
    html+='</table>';
  }
- mixTable('Unqualified Source Mix',sourceMix,'Source');
- mixTable('Unqualified Programme Mix',progMix,'Programme');
- mixTable('Unqualified Country Mix',countryMix,'Country');
+ 
+html+=`<div class="border rounded p-2 mb-3">
+<div onclick="toggleNativeCollapse('unqSourceMix')" style="cursor:pointer;font-weight:bold">▼ Source Mix Details</div>
+<div id="unqSourceMix" style="display:none">`;
+mixTable('Unqualified Source Mix',sourceMix,'Source');
+html+='</div></div>';
+
+html+=`<div class="border rounded p-2 mb-3">
+<div onclick="toggleNativeCollapse('unqProgrammeMix')" style="cursor:pointer;font-weight:bold">▼ Programme Mix Details</div>
+<div id="unqProgrammeMix" style="display:none">`;
+mixTable('Unqualified Programme Mix',progMix,'Programme');
+html+='</div></div>';
+
+html+=`<div class="border rounded p-2 mb-3">
+<div onclick="toggleNativeCollapse('unqCountryMix')" style="cursor:pointer;font-weight:bold">▼ Country Mix Details</div>
+<div id="unqCountryMix" style="display:none">`;
+mixTable('Unqualified Country Mix',countryMix,'Country');
+html+='</div></div>';
+
  el.innerHTML=html;
 }
 function renderDormancy(){
