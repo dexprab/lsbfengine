@@ -1,4 +1,4 @@
-4.0bR6_5_6
+4.0bR6_5_7
 <!DOCTYPE html>
 <html lang="en">
 
@@ -866,7 +866,7 @@ function renderUnqualifiedIntelligence(){
       seg=prog.includes('+')?'ACCA + Masters':'ACCA';
    }
    if(seg){
-      if(!segMap[school][seg]) segMap[school][seg]={unq:0};
+      if(!segMap[school][seg]) segMap[school][seg]={leads:0,unq:0};
       segMap[school][seg].unq++;
    }
  });
@@ -880,6 +880,17 @@ function renderUnqualifiedIntelligence(){
    if(sourceMix[src]) sourceMix[src].leads++;
    if(countryMix[country]) countryMix[country].leads++;
    if(progMix[prog]) progMix[prog].leads++;
+
+   const school=r['Business Unit']||'';
+   let seg=null;
+   if(school==='InterActive'){
+      if(prog.startsWith('Master')||prog.startsWith('MSc')) seg='Masters';
+      else if(prog.startsWith('Doctor')) seg='DBA';
+      else if(prog.startsWith('BSc')) seg='UG';
+   } else if(school==='LSBF Professional Qualifications'){
+      seg=prog.includes('+')?'ACCA + Masters':'ACCA';
+   }
+   if(seg && segMap[school] && segMap[school][seg]) segMap[school][seg].leads++;
  });
 
  let html=`<div class="grid md:grid-cols-4 gap-3 mb-4">
@@ -891,9 +902,10 @@ function renderUnqualifiedIntelligence(){
  Object.entries(segMap).forEach(([school,data])=>{
    const total=Object.values(data).reduce((s,v)=>s+v.unq,0);
    if(!total) return;
-   html+=`<h3 class="text-lg font-bold mt-4 mb-2">${school} - Unqualified Mix</h3><table class="min-w-full border mb-4"><tr><th class="border p-2">Segment</th><th class="border p-2">Unqualified</th><th class="border p-2">Contribution %</th></tr>`;
+   html+=`<h3 class="text-lg font-bold mt-4 mb-2">${school} - Unqualified Mix</h3><table class="min-w-full border mb-4"><tr><th class="border p-2">Segment</th><th class="border p-2">Leads</th><th class="border p-2">Unqualified</th><th class="border p-2">Unqualified %</th><th class="border p-2">Contribution %</th></tr>`;
    Object.entries(data).forEach(([seg,v])=>{
-      html+=`<tr><td class="border p-2">${seg}</td><td class="border p-2">${v.unq}</td><td class="border p-2">${((v.unq/total)*100).toFixed(1)}%</td></tr>`;
+      const unqPct=v.leads?((v.unq/v.leads)*100):0;
+      html+=`<tr><td class="border p-2">${seg}</td><td class="border p-2">${v.leads}</td><td class="border p-2">${v.unq}</td><td class="border p-2">${unqPct.toFixed(1)}%</td><td class="border p-2">${((v.unq/total)*100).toFixed(1)}%</td></tr>`;
    });
    html+='</table>';
  });
