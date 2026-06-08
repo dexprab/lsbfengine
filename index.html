@@ -1,4 +1,4 @@
-4.0bR6_7
+4.0bR6_7_S
 <!DOCTYPE html>
 <html lang="en">
 
@@ -571,7 +571,10 @@ async function loadQualifiedOppHistory(){
    const resp=await fetch('./data/Qualified_History/Lead_Qualified_Opp_FY26.xlsx');
    const buf=await resp.arrayBuffer();
    const wb=XLSX.read(buf,{type:'array'});
-   qualifiedOppData=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+   qualifiedOppData=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{
+   defval:'',
+   range:7
+ });
  }catch(e){console.warn(e);}
 }
 async function loadWonOppHistory(){
@@ -579,7 +582,10 @@ async function loadWonOppHistory(){
    const resp=await fetch('./data/Qualified_History/OPP_ALL_WON_FY26.xlsx');
    const buf=await resp.arrayBuffer();
    const wb=XLSX.read(buf,{type:'array'});
-   wonOppData=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+   wonOppData=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{
+   defval:'',
+   range:7
+ });
  }catch(e){console.warn(e);}
 }
 function renderRevenueAttribution(){
