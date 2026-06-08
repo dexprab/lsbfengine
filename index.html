@@ -1,4 +1,4 @@
-4.0bR6_7_S
+4.0bR6_7_S_1
 <!DOCTYPE html>
 <html lang="en">
 
@@ -573,7 +573,7 @@ async function loadQualifiedOppHistory(){
    const wb=XLSX.read(buf,{type:'array'});
    qualifiedOppData=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{
    defval:'',
-   range:7
+   range:11
  });
  }catch(e){console.warn(e);}
 }
@@ -584,7 +584,7 @@ async function loadWonOppHistory(){
    const wb=XLSX.read(buf,{type:'array'});
    wonOppData=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{
    defval:'',
-   range:7
+   range:11
  });
  }catch(e){console.warn(e);}
 }
