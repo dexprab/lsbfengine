@@ -1,4 +1,4 @@
-4.0bR6_10_2
+4.0bR6_10_3
 <!DOCTYPE html>
 <html lang="en">
 
@@ -325,7 +325,24 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 </div>
 
 <div id="growthLeadersPanel"></div>
-<div id="attributionTrendPanel" class="mt-6"><h3 class="text-lg font-semibold mb-3">Revenue Attribution Intelligence (FY25 vs FY26)</h3><div class="help-box"><div><b>Purpose:</b> Shows how much revenue was generated from current-year demand generation versus historical pipeline conversion.<br><b>Demand Generated Revenue:</b> Revenue from opportunities originating from leads qualified in the same fiscal year.<br><b>Historical Pipeline Revenue:</b> Revenue from opportunities originating before the fiscal year.<br><b>Demand Revenue Share:</b> Demand Generated Revenue ÷ Total Won Revenue.</div></div><div id="attributionTrendCards"></div><div id="programmeAttributionTrends"></div><div id="countryAttributionTrends"></div><div id="sourceAttributionTrends"></div><div id="attributionWinners"></div></div>
+<div id="attributionTrendPanel" class="mt-6"><h3 class="text-lg font-semibold mb-3">Revenue Attribution Intelligence (FY25 vs FY26)</h3><div class="help-box"><div><b>Purpose:</b> Shows how much revenue was generated from current-year demand generation versus historical pipeline conversion.<br><b>Demand Generated Revenue:</b> Revenue from opportunities originating from leads qualified in the same fiscal year.<br><b>Historical Pipeline Revenue:</b> Revenue from opportunities originating before the fiscal year.<br><b>Demand Revenue Share:</b> Demand Generated Revenue ÷ Total Won Revenue.</div></div><div id="attributionTrendCards"></div>
+<div class="border rounded p-2 mb-3">
+<div onclick="toggleNativeCollapse('programmeAttrBlock')" style="cursor:pointer;font-weight:bold">▼ Programme Attribution Trends (5 Segments)</div>
+<div id="programmeAttrBlock" style="display:none"><div id="programmeAttributionTrends"></div></div>
+</div>
+<div class="border rounded p-2 mb-3">
+<div onclick="toggleNativeCollapse('countryAttrBlock')" style="cursor:pointer;font-weight:bold">▼ Country Attribution Trends (Top 20 Countries)</div>
+<div id="countryAttrBlock" style="display:none"><div id="countryAttributionTrends"></div></div>
+</div>
+<div class="border rounded p-2 mb-3">
+<div onclick="toggleNativeCollapse('sourceAttrBlock')" style="cursor:pointer;font-weight:bold">▼ Source Attribution Trends (Top 20 Sources)</div>
+<div id="sourceAttrBlock" style="display:none"><div id="sourceAttributionTrends"></div></div>
+</div>
+<div class="border rounded p-2 mb-3">
+<div onclick="toggleNativeCollapse('winnerAttrBlock')" style="cursor:pointer;font-weight:bold">▼ Attribution Winners</div>
+<div id="winnerAttrBlock" style="display:none"><div id="attributionWinners"></div></div>
+</div>
+</div>
 </div>
 
 </div>
