@@ -1,4 +1,4 @@
-4.0bR6_9_F
+4.0bR6_9_F_F
 <!DOCTYPE html>
 <html lang="en">
 
@@ -727,32 +727,92 @@ async function loadWonOppHistoryFY25(){
 }
 
 
+
 function renderRevenueTrends(){
+
  const cards=document.getElementById('revenueTrendCards');
  const prog=document.getElementById('programmeTrendBlock');
  const country=document.getElementById('countryTrendBlock');
  const source=document.getElementById('sourceTrendBlock');
  const growth=document.getElementById('growthLeadersPanel');
+
  if(!cards) return;
 
- const fy25Won=wonOppDataFY25.length;
- const fy26Won=wonOppData.length;
+ function revenue(rows){
+   return rows.reduce((s,r)=>s+(Number(r['Sales Price']||0)),0);
+ }
 
- const rev25=wonOppDataFY25.reduce((s,r)=>s+(Number(r['Sales Price']||0)),0);
- const rev26=wonOppData.reduce((s,r)=>s+(Number(r['Sales Price']||0)),0);
+ const rev25=revenue(wonOppDataFY25);
+ const rev26=revenue(wonOppData);
 
- const growthPct = rev25 ? (((rev26-rev25)/rev25)*100).toFixed(1) : '0.0';
+ const won25=wonOppDataFY25.length;
+ const won26=wonOppData.length;
 
- cards.innerHTML=`<div class="grid md:grid-cols-3 gap-3 mb-3">
+ const growthPct=rev25 ? (((rev26-rev25)/rev25)*100).toFixed(1) : '0.0';
+
+ cards.innerHTML=`<div class="grid md:grid-cols-4 gap-3 mb-3">
  <div class="border p-3 rounded"><b>FY25 Revenue</b><br>£${Math.round(rev25).toLocaleString()}</div>
  <div class="border p-3 rounded"><b>FY26 Revenue</b><br>£${Math.round(rev26).toLocaleString()}</div>
- <div class="border p-3 rounded"><b>Growth</b><br>${growthPct}%</div>
+ <div class="border p-3 rounded"><b>Growth %</b><br>${growthPct}%</div>
+ <div class="border p-3 rounded"><b>Won Opps</b><br>${won25} → ${won26}</div>
  </div>`;
 
- if(prog) prog.innerHTML='<div class="border p-2 rounded">Programme trend engine active (R6.9.2)</div>';
- if(country) country.innerHTML='<div class="border p-2 rounded">Country trend engine active (R6.9.2)</div>';
- if(source) source.innerHTML='<div class="border p-2 rounded">Source trend engine active (R6.9.2)</div>';
- if(growth) growth.innerHTML='<div class="border p-2 rounded"><b>Growth Leaders</b><br>Trend framework active.</div>';
+ function programmeGroup(r){
+   const bu=r['Business Unit']||'';
+   const p=(r['Programme']||'').trim();
+   if(bu==='InterActive'){
+      if(p.startsWith('Master')||p.startsWith('MSc')) return 'Masters';
+      if(p.startsWith('Doctor')) return 'DBA';
+      if(p.startsWith('BSc')) return 'UG';
+   }
+   if(bu==='LSBF Professional Qualifications'){
+      return p.includes('+') ? 'ACCA + Masters' : 'ACCA';
+   }
+   return null;
+ }
+
+ function aggregate(rows,keyFn){
+   const map={};
+   rows.forEach(r=>{
+      const k=keyFn(r);
+      if(!k) return;
+      map[k]=(map[k]||0)+Number(r['Sales Price']||0);
+   });
+   return map;
+ }
+
+ function buildTable(a,b,label){
+   const keys=[...new Set([...Object.keys(a),...Object.keys(b)])];
+   keys.sort((x,y)=>(b[y]||0)-(b[x]||0));
+
+   let t25=0,t26=0;
+   let h=`<table class="min-w-full border">
+   <tr><th class="border p-2">${label}</th><th class="border p-2">FY25 Revenue</th><th class="border p-2">FY26 Revenue</th><th class="border p-2">Growth %</th></tr>`;
+
+   keys.forEach(k=>{
+      const v25=a[k]||0;
+      const v26=b[k]||0;
+      t25+=v25; t26+=v26;
+      const g=v25?(((v26-v25)/v25)*100).toFixed(1):'0.0';
+      h+=`<tr><td class="border p-2">${k}</td><td class="border p-2">£${Math.round(v25).toLocaleString()}</td><td class="border p-2">£${Math.round(v26).toLocaleString()}</td><td class="border p-2">${g}%</td></tr>`;
+   });
+
+   h+=`<tr style="font-weight:bold"><td class="border p-2">Total</td><td class="border p-2">£${Math.round(t25).toLocaleString()}</td><td class="border p-2">£${Math.round(t26).toLocaleString()}</td><td></td></tr></table>`;
+   return h;
+ }
+
+ const p25=aggregate(wonOppDataFY25,programmeGroup);
+ const p26=aggregate(wonOppData,programmeGroup);
+ const c25=aggregate(wonOppDataFY25,r=>r['Account Country']||'Unknown');
+ const c26=aggregate(wonOppData,r=>r['Account Country']||'Unknown');
+ const s25=aggregate(wonOppDataFY25,r=>r['Lead Source']||'Unknown');
+ const s26=aggregate(wonOppData,r=>r['Lead Source']||'Unknown');
+
+ if(prog) prog.innerHTML=buildTable(p25,p26,'Programme');
+ if(country) country.innerHTML=buildTable(c25,c26,'Country');
+ if(source) source.innerHTML=buildTable(s25,s26,'Source');
+
+ if(growth) growth.innerHTML='<div class="border p-3 rounded"><b>Trend Intelligence Active</b></div>';
 }
 
 
