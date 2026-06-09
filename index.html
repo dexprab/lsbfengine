@@ -1,4 +1,4 @@
-4.0bR6_7_S_1
+4.0bR6_8
 <!DOCTYPE html>
 <html lang="en">
 
@@ -631,6 +631,58 @@ function renderRevenueAttribution(){
  });
  html+='</table>';
  el.innerHTML=html;
+}
+
+
+function renderCountryRevenueAttribution(){
+ const el=document.getElementById('revenueAttributionPanel');
+ if(!el || !qualifiedOppData.length || !wonOppData.length) return;
+ const fy26=new Set();
+ qualifiedOppData.forEach(r=>{
+   const id=String(r['Opportunity ID']||'').trim();
+   const st=String(r['Stage']||'').toLowerCase();
+   if(id && st.includes('won')) fy26.add(id);
+ });
+ const map={};
+ wonOppData.forEach(r=>{
+   const country=(r['Account Country']||'Unknown').toString().trim()||'Unknown';
+   const rev=Number(r['Sales Price']||0);
+   const id=String(r['Opportunity ID']||'').trim();
+   if(!map[country]) map[country]={total:0,current:0};
+   map[country].total+=rev;
+   if(fy26.has(id)) map[country].current+=rev;
+ });
+ let html='<h3 class="text-lg font-bold mt-6 mb-2">Country Revenue Attribution</h3><table class="min-w-full border mb-4"><tr><th class="border p-2">Country</th><th class="border p-2">Total Revenue</th><th class="border p-2">FY26 Demand Revenue</th><th class="border p-2">Pre-FY26 Pipeline</th><th class="border p-2">FY26 Share %</th></tr>';
+ Object.entries(map).sort((a,b)=>b[1].total-a[1].total).forEach(([k,v])=>{
+ html+=`<tr><td class="border p-2">${k}</td><td class="border p-2">£${Math.round(v.total).toLocaleString()}</td><td class="border p-2">£${Math.round(v.current).toLocaleString()}</td><td class="border p-2">£${Math.round(v.total-v.current).toLocaleString()}</td><td class="border p-2">${v.total?((v.current/v.total)*100).toFixed(1):0}%</td></tr>`;
+ });
+ html+='</table>';
+ el.innerHTML += html;
+}
+function renderSourceRevenueAttribution(){
+ const el=document.getElementById('revenueAttributionPanel');
+ if(!el || !qualifiedOppData.length || !wonOppData.length) return;
+ const fy26=new Set();
+ qualifiedOppData.forEach(r=>{
+   const id=String(r['Opportunity ID']||'').trim();
+   const st=String(r['Stage']||'').toLowerCase();
+   if(id && st.includes('won')) fy26.add(id);
+ });
+ const map={};
+ wonOppData.forEach(r=>{
+   const src=(r['Lead Source Description']||'').toString().trim()?((r['Lead Source']||'Unknown')+' | '+(r['Lead Source Description']||'')):(r['Lead Source']||'Unknown');
+   const rev=Number(r['Sales Price']||0);
+   const id=String(r['Opportunity ID']||'').trim();
+   if(!map[src]) map[src]={total:0,current:0};
+   map[src].total+=rev;
+   if(fy26.has(id)) map[src].current+=rev;
+ });
+ let html='<h3 class="text-lg font-bold mt-6 mb-2">Source Revenue Attribution</h3><table class="min-w-full border mb-4"><tr><th class="border p-2">Source</th><th class="border p-2">Total Revenue</th><th class="border p-2">FY26 Demand Revenue</th><th class="border p-2">Pre-FY26 Pipeline</th><th class="border p-2">FY26 Share %</th></tr>';
+ Object.entries(map).sort((a,b)=>b[1].total-a[1].total).forEach(([k,v])=>{
+ html+=`<tr><td class="border p-2">${k}</td><td class="border p-2">£${Math.round(v.total).toLocaleString()}</td><td class="border p-2">£${Math.round(v.current).toLocaleString()}</td><td class="border p-2">£${Math.round(v.total-v.current).toLocaleString()}</td><td class="border p-2">${v.total?((v.current/v.total)*100).toFixed(1):0}%</td></tr>`;
+ });
+ html+='</table>';
+ el.innerHTML += html;
 }
 
 const QUARTER_END_DATES={
@@ -1483,6 +1535,8 @@ renderLeadValidation();
 renderLeadAgingV2();
 renderQualifiedVelocity();
 renderRevenueAttribution();
+renderCountryRevenueAttribution();
+renderSourceRevenueAttribution();
 renderCountrySourceVelocity();
 renderUnqualifiedIntelligence();
 renderReasonIntelligence();
