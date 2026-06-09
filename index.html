@@ -1,4 +1,4 @@
-4.0bR6_9_1
+4.0bR6_9_a
 <!DOCTYPE html>
 <html lang="en">
 
@@ -308,7 +308,26 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 </div>
 <div id="revenueAttributionSection" class="bg-white rounded-2xl shadow p-6">
 <h2 class="text-xl font-semibold mb-4">Revenue Attribution Intelligence</h2>
-<div id="revenueAttributionPanel"></div><div id="revenueTrendPanel" class="mt-6"><h3 class="text-lg font-semibold mb-3">Revenue Trends (FY25 vs FY26)</h3><div id="revenueTrendCards"></div><div id="programmeTrendPanel"></div><div id="countryTrendPanel"></div><div id="sourceTrendPanel"></div><div id="growthLeadersPanel"></div></div>
+<div id="revenueAttributionPanel"></div><div id="revenueTrendPanel" class="mt-6"><h3 class="text-lg font-semibold mb-3">Revenue Trends (FY25 vs FY26)</h3><div id="revenueTrendCards"></div>
+<div class="border rounded p-2 mb-3">
+<div onclick="toggleNativeCollapse('programmeTrendBlock')" style="cursor:pointer;font-weight:bold">▼ Programme Trends</div>
+<div id="programmeTrendBlock" style="display:none"></div>
+</div>
+
+<div class="border rounded p-2 mb-3">
+<div onclick="toggleNativeCollapse('countryTrendBlock')" style="cursor:pointer;font-weight:bold">▼ Country Revenue Trends</div>
+<div id="countryTrendBlock" style="display:none"></div>
+</div>
+
+<div class="border rounded p-2 mb-3">
+<div onclick="toggleNativeCollapse('sourceTrendBlock')" style="cursor:pointer;font-weight:bold">▼ Source Revenue Trends</div>
+<div id="sourceTrendBlock" style="display:none"></div>
+</div>
+
+<div id="growthLeadersPanel"></div>
+</div>
+
+</div>
 
 <div id="leadValidationSection" class="bg-white rounded-2xl shadow p-6">
 <h2 class="text-xl font-semibold mb-4">Lead Summary Validation</h2><div id='leadSummaryQuarterInfo' class='text-sm text-gray-500 mb-2'></div>
@@ -541,6 +560,8 @@ let leadSummaryData = [];
 let qualifiedDateMap={};
 let qualifiedOppData=[];
 let wonOppData=[];
+let qualifiedOppDataFY25=[];
+let wonOppDataFY25=[];
 async function loadQualifiedHistory(){
  try{
    const resp=await fetch('./data/Qualified_History/Lead_History_Qualified_FY26.xlsx');
