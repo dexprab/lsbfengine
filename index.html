@@ -1,4 +1,4 @@
-4.0bR6_10_1
+4.0bR6_10_2
 <!DOCTYPE html>
 <html lang="en">
 
@@ -836,12 +836,49 @@ function renderAttributionTrends(){
    return {total,demand,pipeline:total-demand,share:total?demand*100/total:0,won:wonCnt};
  }
  const m25=metrics(wonOppDataFY25,d25), m26=metrics(wonOppData,d26);
- cards.innerHTML=`<div class="grid md:grid-cols-5 gap-3">
- <div class="border p-3 rounded"><b>FY25 Revenue</b><br>£${Math.round(m25.total).toLocaleString()}</div>
- <div class="border p-3 rounded"><b>FY26 Revenue</b><br>£${Math.round(m26.total).toLocaleString()}</div>
- <div class="border p-3 rounded"><b>FY26 Demand Revenue</b><br>£${Math.round(m26.demand).toLocaleString()}</div>
- <div class="border p-3 rounded"><b>Demand Share</b><br>${m26.share.toFixed(1)}%</div>
- <div class="border p-3 rounded"><b>Won Opps</b><br>${m26.won}</div></div>`;
+ cards.innerHTML=`
+<table class="min-w-full border mb-4">
+<tr>
+<th class="border p-2">Metric</th>
+<th class="border p-2">FY25</th>
+<th class="border p-2">FY26</th>
+<th class="border p-2">Change</th>
+</tr>
+<tr>
+<td class="border p-2"><b>Total Won Revenue</b></td>
+<td class="border p-2">£${Math.round(m25.total).toLocaleString()}</td>
+<td class="border p-2">£${Math.round(m26.total).toLocaleString()}</td>
+<td class="border p-2">${m25.total?(((m26.total-m25.total)/m25.total)*100).toFixed(1):0}%</td>
+</tr>
+<tr>
+<td class="border p-2"><b>Demand Generated Revenue</b></td>
+<td class="border p-2">£${Math.round(m25.demand).toLocaleString()}</td>
+<td class="border p-2">£${Math.round(m26.demand).toLocaleString()}</td>
+<td class="border p-2">${m25.demand?(((m26.demand-m25.demand)/m25.demand)*100).toFixed(1):0}%</td>
+</tr>
+<tr>
+<td class="border p-2"><b>Historical Pipeline Revenue</b></td>
+<td class="border p-2">£${Math.round(m25.pipeline).toLocaleString()}</td>
+<td class="border p-2">£${Math.round(m26.pipeline).toLocaleString()}</td>
+<td class="border p-2">${m25.pipeline?(((m26.pipeline-m25.pipeline)/m25.pipeline)*100).toFixed(1):0}%</td>
+</tr>
+<tr>
+<td class="border p-2"><b>Demand Revenue Share</b></td>
+<td class="border p-2">${m25.share.toFixed(1)}%</td>
+<td class="border p-2">${m26.share.toFixed(1)}%</td>
+<td class="border p-2">${(m26.share-m25.share).toFixed(1)} pts</td>
+</tr>
+<tr>
+<td class="border p-2"><b>Won Opportunities</b></td>
+<td class="border p-2">${m25.won}</td>
+<td class="border p-2">${m26.won}</td>
+<td class="border p-2">${m26.won-m25.won}</td>
+</tr>
+</table>
+<div class="border rounded p-3 bg-blue-50">
+<b>Demand Share Interpretation</b><br>
+&lt;40% = Pipeline Dependent | 40-55% = Balanced | 55-70% = Healthy | &gt;70% = Strong Demand Engine
+</div>`;
 
  function seg(r){
   const bu=r['Business Unit']||'', p=(r['Programme']||'').trim();
