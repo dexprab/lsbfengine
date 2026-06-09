@@ -1,4 +1,4 @@
-4.0bR6_8
+4.0bR6_8_1
 <!DOCTYPE html>
 <html lang="en">
 
@@ -306,6 +306,10 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 <h2 class="text-xl font-semibold mb-4">Executive Summary</h2><div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Measures overall business performance. Calculated using aggregated leads, qualified leads and qualification rate.</div><div style="font-size:11px;color:#dc2626;margin-bottom:8px;">Scope: Interactive + PQ only. Executive Education excluded from benchmark calculations.</div>
 <div id="executiveSummary" class="grid md:grid-cols-4 gap-4"></div>
 </div>
+<div id="revenueAttributionSection" class="bg-white rounded-2xl shadow p-6">
+<h2 class="text-xl font-semibold mb-4">Revenue Attribution Intelligence</h2>
+<div id="revenueAttributionPanel"></div>
+
 <div id="leadValidationSection" class="bg-white rounded-2xl shadow p-6">
 <h2 class="text-xl font-semibold mb-4">Lead Summary Validation</h2><div id='leadSummaryQuarterInfo' class='text-sm text-gray-500 mb-2'></div>
 <div id="leadValidationPanel"></div>
@@ -322,9 +326,7 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 </div>
 
 
-<div id="revenueAttributionSection" class="bg-white rounded-2xl shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Revenue Attribution Intelligence</h2>
-<div id="revenueAttributionPanel"></div>
+
 </div>
 
 <div id="unqualifiedSection" class="bg-white rounded-2xl shadow p-6">
@@ -629,7 +631,7 @@ function renderRevenueAttribution(){
  Object.entries(segs).forEach(([k,v])=>{
  html+=`<tr><td class="border p-2">${k}</td><td class="border p-2">£${Math.round(v.total).toLocaleString()}</td><td class="border p-2">£${Math.round(v.current).toLocaleString()}</td><td class="border p-2">£${Math.round(v.total-v.current).toLocaleString()}</td><td class="border p-2">${v.total?((v.current/v.total)*100).toFixed(1):0}%</td></tr>`;
  });
- html+='</table>';
+ html+='</table></div></div>';
  el.innerHTML=html;
 }
 
@@ -652,7 +654,7 @@ function renderCountryRevenueAttribution(){
    map[country].total+=rev;
    if(fy26.has(id)) map[country].current+=rev;
  });
- let html='<h3 class="text-lg font-bold mt-6 mb-2">Country Revenue Attribution</h3><table class="min-w-full border mb-4"><tr><th class="border p-2">Country</th><th class="border p-2">Total Revenue</th><th class="border p-2">FY26 Demand Revenue</th><th class="border p-2">Pre-FY26 Pipeline</th><th class="border p-2">FY26 Share %</th></tr>';
+ let html='<div class="border rounded p-2 mb-3"><div onclick="toggleNativeCollapse(\'countryRevenueBlock\')" style="cursor:pointer;font-weight:bold">▼ Country Revenue Attribution</div><div id="countryRevenueBlock" style="display:none"><table class="min-w-full border mb-4"><tr><th class="border p-2">Country</th><th class="border p-2">Total Revenue</th><th class="border p-2">FY26 Demand Revenue</th><th class="border p-2">Pre-FY26 Pipeline</th><th class="border p-2">FY26 Share %</th></tr>';
  Object.entries(map).sort((a,b)=>b[1].total-a[1].total).forEach(([k,v])=>{
  html+=`<tr><td class="border p-2">${k}</td><td class="border p-2">£${Math.round(v.total).toLocaleString()}</td><td class="border p-2">£${Math.round(v.current).toLocaleString()}</td><td class="border p-2">£${Math.round(v.total-v.current).toLocaleString()}</td><td class="border p-2">${v.total?((v.current/v.total)*100).toFixed(1):0}%</td></tr>`;
  });
@@ -677,7 +679,7 @@ function renderSourceRevenueAttribution(){
    map[src].total+=rev;
    if(fy26.has(id)) map[src].current+=rev;
  });
- let html='<h3 class="text-lg font-bold mt-6 mb-2">Source Revenue Attribution</h3><table class="min-w-full border mb-4"><tr><th class="border p-2">Source</th><th class="border p-2">Total Revenue</th><th class="border p-2">FY26 Demand Revenue</th><th class="border p-2">Pre-FY26 Pipeline</th><th class="border p-2">FY26 Share %</th></tr>';
+ let html='<div class="border rounded p-2 mb-3"><div onclick="toggleNativeCollapse(\'sourceRevenueBlock\')" style="cursor:pointer;font-weight:bold">▼ Source Revenue Attribution</div><div id="sourceRevenueBlock" style="display:none"><table class="min-w-full border mb-4"><tr><th class="border p-2">Source</th><th class="border p-2">Total Revenue</th><th class="border p-2">FY26 Demand Revenue</th><th class="border p-2">Pre-FY26 Pipeline</th><th class="border p-2">FY26 Share %</th></tr>';
  Object.entries(map).sort((a,b)=>b[1].total-a[1].total).forEach(([k,v])=>{
  html+=`<tr><td class="border p-2">${k}</td><td class="border p-2">£${Math.round(v.total).toLocaleString()}</td><td class="border p-2">£${Math.round(v.current).toLocaleString()}</td><td class="border p-2">£${Math.round(v.total-v.current).toLocaleString()}</td><td class="border p-2">${v.total?((v.current/v.total)*100).toFixed(1):0}%</td></tr>`;
  });
