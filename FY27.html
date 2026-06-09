@@ -1,77 +1,105 @@
+1.2
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
-<title>RevOps Forecast Intelligence R1.0</title>
+<title>RevOps Forecast Intelligence R1.2A Attribution Connected</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <style>
-body{font-family:Arial,sans-serif;background:#f5f5f5;margin:20px}
-.section{background:#fff;padding:16px;border-radius:10px;margin-bottom:16px}
-.cards{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
-.card{border:1px solid #ddd;padding:10px;border-radius:8px}
+body{font-family:Arial;margin:20px;background:#f5f5f5}
+.section{background:white;padding:15px;border-radius:8px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.card{border:1px solid #ddd;padding:10px;border-radius:6px}
 table{width:100%;border-collapse:collapse}
-th,td{border:1px solid #ddd;padding:8px;text-align:left}
-th{background:#f0f0f0}
+th,td{border:1px solid #ddd;padding:6px}
+th{background:#eee}
 </style>
 </head>
 <body>
-<h1>RevOps Forecast Intelligence R1.0</h1>
+<h1>RevOps Forecast Intelligence R1.2A</h1>
 
 <div class="section">
-<h2>Executive Forecast Summary</h2>
-<div class="cards">
-<div class="card"><b>FY25 Revenue</b><br>Calculated from FY25 Won Opps</div>
-<div class="card"><b>FY26 Revenue</b><br>Calculated from FY26 Won Opps</div>
-<div class="card"><b>FY27 Forecast</b><br>Forecast Engine</div>
-<div class="card"><b>Forecast Growth %</b></div>
-<div class="card"><b>Confidence</b></div>
-<div class="card"><b>Base Gap (£4.5M)</b></div>
-<div class="card"><b>Stretch Gap (£5.5M)</b></div>
-</div>
+<h3>Load Attribution Files</h3>
+<input type="file" id="q25"> Lead_Qualified_Opp_FY25<br><br>
+<input type="file" id="w25"> OPP_ALL_WON_FY25<br><br>
+<input type="file" id="q26"> Lead_Qualified_Opp_FY26<br><br>
+<input type="file" id="w26"> OPP_ALL_WON_FY26<br><br>
+<button onclick="build()">Build Forecast Model</button>
 </div>
 
 <div class="section">
-<h2>Forecast Methodology</h2>
-<ul>
-<li>Revenue Trend FY25→FY26</li>
-<li>Demand Share Trend FY25→FY26</li>
-<li>Pipeline Dependency FY26</li>
-<li>Classification: Accelerate / Protect / Watch / Fix</li>
-</ul>
+<h3>Executive Summary</h3>
+<div id="cards" class="grid"></div>
 </div>
 
 <div class="section">
-<h2>Programme Forecast Intelligence</h2>
-<table>
-<tr><th>Programme</th><th>FY25 Rev</th><th>FY26 Rev</th><th>Growth %</th><th>Demand Trend</th><th>FY27 Forecast</th><th>Classification</th></tr>
-</table>
+<h3>Programme Forecast Intelligence</h3>
+<div id="prog"></div>
 </div>
 
-<div class="section">
-<h2>Country Forecast Intelligence</h2>
-<table>
-<tr><th>Country</th><th>FY25 Rev</th><th>FY26 Rev</th><th>Growth %</th><th>Demand Trend</th><th>FY27 Forecast</th><th>Classification</th></tr>
-</table>
-</div>
+<script>
+async function readExcel(file){
+ return new Promise(resolve=>{
+   const r=new FileReader();
+   r.onload=e=>{
+     const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+     const ws=wb.Sheets[wb.SheetNames[0]];
+     resolve(XLSX.utils.sheet_to_json(ws,{defval:''}));
+   };
+   r.readAsArrayBuffer(file);
+ });
+}
 
-<div class="section">
-<h2>Source Forecast Intelligence</h2>
-<table>
-<tr><th>Source</th><th>FY25 Rev</th><th>FY26 Rev</th><th>Growth %</th><th>Demand Trend</th><th>FY27 Forecast</th><th>Classification</th></tr>
-</table>
-</div>
+function seg(r){
+ const bu=r['Business Unit']||'';
+ const p=(r['Programme']||'').trim();
+ if(bu==='InterActive'){
+   if(p.startsWith('Master')||p.startsWith('MSc')) return 'Masters';
+   if(p.startsWith('Doctor')) return 'DBA';
+   if(p.startsWith('BSc')) return 'UG';
+ }
+ if(bu==='LSBF Professional Qualifications') return p.includes('+')?'ACCA + Masters':'ACCA';
+ return 'Other';
+}
 
-<div class="section">
-<h2>Opportunity Matrix</h2>
-<p><b>Accelerate:</b> Revenue ↑ Demand ↑</p>
-<p><b>Protect:</b> Revenue ↑ Demand Stable</p>
-<p><b>Watch:</b> Revenue Stable Demand ↓</p>
-<p><b>Fix:</b> Revenue ↓ Demand ↓</p>
-</div>
+async function build(){
+ const q25=await readExcel(document.getElementById('q25').files[0]);
+ const w25=await readExcel(document.getElementById('w25').files[0]);
+ const q26=await readExcel(document.getElementById('q26').files[0]);
+ const w26=await readExcel(document.getElementById('w26').files[0]);
 
-<div class="section">
-<h2>Strategic Recommendations</h2>
-<p>Auto-generated recommendations placeholder.</p>
-</div>
+ const demand25=new Set(q25.map(r=>String(r['Opportunity ID']||'').trim()));
+ const demand26=new Set(q26.map(r=>String(r['Opportunity ID']||'').trim()));
 
+ function rev(rows){return rows.reduce((s,r)=>s+(+r['Sales Price']||0),0);}
+ const r25=rev(w25), r26=rev(w26);
+ const growth=r25?((r26-r25)/r25)*100:0;
+ const forecast=r26*(1+growth/100*0.7);
+
+ document.getElementById('cards').innerHTML=`
+ <div class="card"><b>FY25 Revenue</b><br>£${Math.round(r25).toLocaleString()}</div>
+ <div class="card"><b>FY26 Revenue</b><br>£${Math.round(r26).toLocaleString()}</div>
+ <div class="card"><b>FY27 Forecast</b><br>£${Math.round(forecast).toLocaleString()}</div>
+ <div class="card"><b>Gap to £5.5M</b><br>£${Math.round(5500000-forecast).toLocaleString()}</div>`;
+
+ const p={};
+ w26.forEach(r=>{
+   const k=seg(r);
+   if(!p[k]) p[k]={rev:0,demand:0};
+   const amt=+r['Sales Price']||0;
+   p[k].rev+=amt;
+   if(demand26.has(String(r['Opportunity ID']||'').trim())) p[k].demand+=amt;
+ });
+
+ let h='<table><tr><th>Programme</th><th>FY26 Revenue</th><th>Demand Share</th><th>Classification</th></tr>';
+ Object.entries(p).forEach(([k,v])=>{
+   const ds=v.rev?(v.demand/v.rev*100):0;
+   const cls=ds>60?'Accelerate':ds>45?'Protect':ds>30?'Watch':'Fix';
+   h+=`<tr><td>${k}</td><td>£${Math.round(v.rev).toLocaleString()}</td><td>${ds.toFixed(1)}%</td><td>${cls}</td></tr>`;
+ });
+ h+='</table>';
+ document.getElementById('prog').innerHTML=h;
+}
+</script>
 </body>
 </html>
