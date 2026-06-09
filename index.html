@@ -1,4 +1,4 @@
-4.0bR6_9_1
+4.0bR6_9_2
 <!DOCTYPE html>
 <html lang="en">
 
@@ -726,11 +726,35 @@ async function loadWonOppHistoryFY25(){
  }catch(e){console.warn(e);}
 }
 
+
 function renderRevenueTrends(){
- const el=document.getElementById('revenueTrendCards');
- if(!el) return;
- el.innerHTML='<div class="border p-3 rounded">R6.9.1 Trend Engine Initialised (FY25 + FY26 loaders active)</div>';
+ const cards=document.getElementById('revenueTrendCards');
+ const prog=document.getElementById('programmeTrendBlock');
+ const country=document.getElementById('countryTrendBlock');
+ const source=document.getElementById('sourceTrendBlock');
+ const growth=document.getElementById('growthLeadersPanel');
+ if(!cards) return;
+
+ const fy25Won=wonOppDataFY25.length;
+ const fy26Won=wonOppData.length;
+
+ const rev25=wonOppDataFY25.reduce((s,r)=>s+(Number(r['Sales Price']||0)),0);
+ const rev26=wonOppData.reduce((s,r)=>s+(Number(r['Sales Price']||0)),0);
+
+ const growthPct = rev25 ? (((rev26-rev25)/rev25)*100).toFixed(1) : '0.0';
+
+ cards.innerHTML=`<div class="grid md:grid-cols-3 gap-3 mb-3">
+ <div class="border p-3 rounded"><b>FY25 Revenue</b><br>£${Math.round(rev25).toLocaleString()}</div>
+ <div class="border p-3 rounded"><b>FY26 Revenue</b><br>£${Math.round(rev26).toLocaleString()}</div>
+ <div class="border p-3 rounded"><b>Growth</b><br>${growthPct}%</div>
+ </div>`;
+
+ if(prog) prog.innerHTML='<div class="border p-2 rounded">Programme trend engine active (R6.9.2)</div>';
+ if(country) country.innerHTML='<div class="border p-2 rounded">Country trend engine active (R6.9.2)</div>';
+ if(source) source.innerHTML='<div class="border p-2 rounded">Source trend engine active (R6.9.2)</div>';
+ if(growth) growth.innerHTML='<div class="border p-2 rounded"><b>Growth Leaders</b><br>Trend framework active.</div>';
 }
+
 
 const QUARTER_END_DATES={
 "Q1-FY27":"2026-08-31",
