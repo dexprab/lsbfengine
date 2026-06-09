@@ -1,4 +1,4 @@
-4.0bR6_9_a
+4.0bR6_9_1
 <!DOCTYPE html>
 <html lang="en">
 
@@ -706,6 +706,30 @@ function renderSourceRevenueAttribution(){
  });
  html+='</table>';
  el.innerHTML += html;
+}
+
+
+async function loadQualifiedOppHistoryFY25(){
+ try{
+   const resp=await fetch('./data/Qualified_History/Lead_Qualified_Opp_FY25.xlsx');
+   const buf=await resp.arrayBuffer();
+   const wb=XLSX.read(buf,{type:'array'});
+   qualifiedOppDataFY25=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',range:11});
+ }catch(e){console.warn(e);}
+}
+async function loadWonOppHistoryFY25(){
+ try{
+   const resp=await fetch('./data/Qualified_History/OPP_ALL_WON_FY25.xlsx');
+   const buf=await resp.arrayBuffer();
+   const wb=XLSX.read(buf,{type:'array'});
+   wonOppDataFY25=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',range:11});
+ }catch(e){console.warn(e);}
+}
+
+function renderRevenueTrends(){
+ const el=document.getElementById('revenueTrendCards');
+ if(!el) return;
+ el.innerHTML='<div class="border p-3 rounded">R6.9.1 Trend Engine Initialised (FY25 + FY26 loaders active)</div>';
 }
 
 const QUARTER_END_DATES={
@@ -1516,6 +1540,8 @@ async function calculateDashboard() {
 await loadQualifiedHistory();
 await loadQualifiedOppHistory();
 await loadWonOppHistory();
+await loadQualifiedOppHistoryFY25();
+await loadWonOppHistoryFY25();
 
   calculateKPIs();
 
@@ -1560,6 +1586,7 @@ renderQualifiedVelocity();
 renderRevenueAttribution();
 renderCountryRevenueAttribution();
 renderSourceRevenueAttribution();
+renderRevenueTrends();
 renderCountrySourceVelocity();
 renderUnqualifiedIntelligence();
 renderReasonIntelligence();
