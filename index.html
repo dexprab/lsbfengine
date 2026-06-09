@@ -1,4 +1,4 @@
-4.0bR6_9_F_F
+4.0bR6_10
 <!DOCTYPE html>
 <html lang="en">
 
@@ -325,6 +325,7 @@ onchange="APP_CONFIG.MODE==='GITHUB'?loadSelectedQuarterGitHub():loadSelectedQua
 </div>
 
 <div id="growthLeadersPanel"></div>
+<div id="attributionTrendPanel" class="mt-6"><h3 class="text-lg font-semibold mb-3">Attribution Trends</h3><div id="attributionTrendCards"></div><div id="programmeAttributionTrends"></div><div id="countryAttributionTrends"></div><div id="sourceAttributionTrends"></div><div id="attributionWinners"></div></div>
 </div>
 
 </div>
@@ -815,6 +816,66 @@ function renderRevenueTrends(){
  if(growth) growth.innerHTML='<div class="border p-3 rounded"><b>Trend Intelligence Active</b></div>';
 }
 
+
+
+function renderAttributionTrends(){
+ const cards=document.getElementById('attributionTrendCards');
+ if(!cards || !wonOppData.length || !wonOppDataFY25.length) return;
+
+ function demandSet(rows){
+   const s=new Set();
+   rows.forEach(r=>{const id=String(r['Opportunity ID']||'').trim(); const st=String(r['Stage']||'').toLowerCase(); if(id && st.includes('won')) s.add(id);});
+   return s;
+ }
+ const d25=demandSet(qualifiedOppDataFY25||[]);
+ const d26=demandSet(qualifiedOppData||[]);
+
+ function metrics(won,dset){
+   let total=0,demand=0,wonCnt=won.length;
+   won.forEach(r=>{ const rev=Number(r['Sales Price']||0); total+=rev; const id=String(r['Opportunity ID']||'').trim(); if(dset.has(id)) demand+=rev;});
+   return {total,demand,pipeline:total-demand,share:total?demand*100/total:0,won:wonCnt};
+ }
+ const m25=metrics(wonOppDataFY25,d25), m26=metrics(wonOppData,d26);
+ cards.innerHTML=`<div class="grid md:grid-cols-5 gap-3">
+ <div class="border p-3 rounded"><b>FY25 Revenue</b><br>£${Math.round(m25.total).toLocaleString()}</div>
+ <div class="border p-3 rounded"><b>FY26 Revenue</b><br>£${Math.round(m26.total).toLocaleString()}</div>
+ <div class="border p-3 rounded"><b>FY26 Demand Revenue</b><br>£${Math.round(m26.demand).toLocaleString()}</div>
+ <div class="border p-3 rounded"><b>Demand Share</b><br>${m26.share.toFixed(1)}%</div>
+ <div class="border p-3 rounded"><b>Won Opps</b><br>${m26.won}</div></div>`;
+
+ function seg(r){
+  const bu=r['Business Unit']||'', p=(r['Programme']||'').trim();
+  if(bu==='InterActive'){ if(p.startsWith('Master')||p.startsWith('MSc')) return 'Masters'; if(p.startsWith('Doctor')) return 'DBA'; if(p.startsWith('BSc')) return 'UG';}
+  if(bu==='LSBF Professional Qualifications') return p.includes('+')?'ACCA + Masters':'ACCA';
+  return null;
+ }
+ function build(won,dset,keyfn){
+   const m={};
+   won.forEach(r=>{const k=keyfn(r); if(!k) return; const rev=Number(r['Sales Price']||0); const id=String(r['Opportunity ID']||'').trim();
+   if(!m[k]) m[k]={total:0,demand:0,won:0}; m[k].total+=rev; m[k].won++; if(dset.has(id)) m[k].demand+=rev;});
+   return m;
+ }
+ const p25=build(wonOppDataFY25,d25,seg), p26=build(wonOppData,d26,seg);
+ let html='<h4 class="font-bold mt-4">Programme Attribution Trends</h4><table class="min-w-full border"><tr><th class="border p-2">Programme</th><th class="border p-2">FY25 Revenue</th><th class="border p-2">FY26 Revenue</th><th class="border p-2">Growth %</th><th class="border p-2">FY25 Demand %</th><th class="border p-2">FY26 Demand %</th><th class="border p-2">FY26 Pipeline %</th></tr>';
+ ['Masters','DBA','UG','ACCA','ACCA + Masters'].forEach(k=>{const a=p25[k]||{total:0,demand:0}; const b=p26[k]||{total:0,demand:0}; const g=a.total?((b.total-a.total)*100/a.total):0;
+ html+=`<tr><td class="border p-2">${k}</td><td class="border p-2">£${Math.round(a.total).toLocaleString()}</td><td class="border p-2">£${Math.round(b.total).toLocaleString()}</td><td class="border p-2">${g.toFixed(1)}%</td><td class="border p-2">${a.total?(a.demand*100/a.total).toFixed(1):0}%</td><td class="border p-2">${b.total?(b.demand*100/b.total).toFixed(1):0}%</td><td class="border p-2">${b.total?((b.total-b.demand)*100/b.total).toFixed(1):0}%</td></tr>`;});
+ html+='</table>'; document.getElementById('programmeAttributionTrends').innerHTML=html;
+
+ function topTable(targetId,keyfn,title){
+   const a=build(wonOppDataFY25,d25,keyfn), b=build(wonOppData,d26,keyfn);
+   const keys=Object.keys(b).sort((x,y)=>(b[y]?.total||0)-(b[x]?.total||0)).slice(0,20);
+   let h=`<h4 class="font-bold mt-4">${title}</h4><table class="min-w-full border"><tr><th class="border p-2">${title}</th><th class="border p-2">FY26 Revenue</th><th class="border p-2">Growth %</th><th class="border p-2">Demand %</th></tr>`;
+   keys.forEach(k=>{const x=a[k]||{total:0}; const y=b[k]; const g=x.total?((y.total-x.total)*100/x.total):0; h+=`<tr><td class="border p-2">${k}</td><td class="border p-2">£${Math.round(y.total).toLocaleString()}</td><td class="border p-2">${g.toFixed(1)}%</td><td class="border p-2">${y.total?(y.demand*100/y.total).toFixed(1):0}%</td></tr>`;});
+   h+='</table>'; document.getElementById(targetId).innerHTML=h;
+ }
+ topTable('countryAttributionTrends',r=>r['Account Country']||'Unknown','Country Attribution Trends');
+ topTable('sourceAttributionTrends',r=>r['Lead Source']||'Unknown','Source Attribution Trends');
+
+ document.getElementById('attributionWinners').innerHTML=`<div class="border p-3 rounded mt-4"><b>Attribution Winners</b><br>
+ Highest Demand Share: ${(Object.entries(p26).sort((a,b)=>(b[1].demand/b[1].total||0)-(a[1].demand/a[1].total||0))[0]||['N/A'])[0]}<br>
+ Most Pipeline Dependent: ${(Object.entries(p26).sort((a,b)=>((b[1].total-b[1].demand)/b[1].total||0)-((a[1].total-a[1].demand)/a[1].total||0))[0]||['N/A'])[0]}
+ </div>`;
+}
 
 const QUARTER_END_DATES={
 "Q1-FY27":"2026-08-31",
@@ -1671,6 +1732,7 @@ renderRevenueAttribution();
 renderCountryRevenueAttribution();
 renderSourceRevenueAttribution();
 renderRevenueTrends();
+renderAttributionTrends();
 renderCountrySourceVelocity();
 renderUnqualifiedIntelligence();
 renderReasonIntelligence();
