@@ -1,4 +1,4 @@
-4.0bR6_10_3
+4.0bR6_10_4
 <!DOCTYPE html>
 <html lang="en">
 
@@ -918,8 +918,15 @@ function renderAttributionTrends(){
  function topTable(targetId,keyfn,title){
    const a=build(wonOppDataFY25,d25,keyfn), b=build(wonOppData,d26,keyfn);
    const keys=Object.keys(b).sort((x,y)=>(b[y]?.total||0)-(b[x]?.total||0)).slice(0,20);
-   let h=`<h4 class="font-bold mt-4">${title}</h4><table class="min-w-full border"><tr><th class="border p-2">${title}</th><th class="border p-2">FY26 Revenue</th><th class="border p-2">Growth %</th><th class="border p-2">Demand %</th></tr>`;
-   keys.forEach(k=>{const x=a[k]||{total:0}; const y=b[k]; const g=x.total?((y.total-x.total)*100/x.total):0; h+=`<tr><td class="border p-2">${k}</td><td class="border p-2">£${Math.round(y.total).toLocaleString()}</td><td class="border p-2">${g.toFixed(1)}%</td><td class="border p-2">${y.total?(y.demand*100/y.total).toFixed(1):0}%</td></tr>`;});
+   let h=`<h4 class="font-bold mt-4">${title}</h4><table class="min-w-full border"><tr><th class="border p-2">${title}</th><th class="border p-2">FY25 Revenue</th><th class="border p-2">FY26 Revenue</th><th class="border p-2">Growth %</th><th class="border p-2">FY25 Demand %</th><th class="border p-2">FY26 Demand %</th><th class="border p-2">FY25 Pipeline %</th><th class="border p-2">FY26 Pipeline %</th></tr>`;
+   keys.forEach(k=>{
+      const x=a[k]||{total:0,demand:0};
+      const y=b[k]||{total:0,demand:0};
+      const g=x.total?((y.total-x.total)*100/x.total):0;
+      const d25=x.total?(x.demand*100/x.total):0;
+      const d26=y.total?(y.demand*100/y.total):0;
+      h+=`<tr><td class="border p-2">${k}</td><td class="border p-2">£${Math.round(x.total).toLocaleString()}</td><td class="border p-2">£${Math.round(y.total).toLocaleString()}</td><td class="border p-2">${g.toFixed(1)}%</td><td class="border p-2">${d25.toFixed(1)}%</td><td class="border p-2">${d26.toFixed(1)}%</td><td class="border p-2">${(100-d25).toFixed(1)}%</td><td class="border p-2">${(100-d26).toFixed(1)}%</td></tr>`;
+   });
    h+='</table>'; document.getElementById(targetId).innerHTML=h;
  }
  topTable('countryAttributionTrends',r=>r['Account Country']||'Unknown','Country Attribution Trends');
