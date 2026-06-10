@@ -1,4 +1,4 @@
-1.4
+1.5
 <!DOCTYPE html>
 <html>
 <head>
@@ -16,7 +16,7 @@ th{background:#eee}
 </style>
 </head>
 <body>
-<h1>RevOps Forecast Intelligence R1.4 Strategic Allocation Engine</h1>
+<h1>RevOps Forecast Intelligence R1.5 Allocation & Target Engine</h1>
 
 <div class="section">
 <h3>GitHub Data Status</h3>
@@ -27,6 +27,7 @@ th{background:#eee}
 <div class="section">
 <h3>Executive Summary</h3>
 <div id="cards" class="grid"></div>
+<div id="planningSummary" style="margin-top:12px"></div>
 </div>
 
 <div class="section">
@@ -86,7 +87,21 @@ async function build(){
  <div class="card"><b>FY25 Revenue</b><br>£${Math.round(r25).toLocaleString()}</div>
  <div class="card"><b>FY26 Revenue</b><br>£${Math.round(r26).toLocaleString()}</div>
  <div class="card"><b>FY27 Forecast</b><br>£${Math.round(forecast).toLocaleString()}</div>
- <div class="card"><b>Gap to £5.5M</b><br>£${Math.round(5500000-forecast).toLocaleString()}</div>`;
+ <div class="card"><b>Historical Trend Forecast</b><br>£${Math.round(forecast).toLocaleString()}</div>`;
+
+ const growthBase=((4500000-r26)/r26)*100;
+ const growthStretch=((5500000-r26)/r26)*100;
+
+ document.getElementById('planningSummary').innerHTML=`
+ <table>
+ <tr><th colspan="2">FY27 Planning Targets</th></tr>
+ <tr><td>Base Target</td><td>£4,500,000</td></tr>
+ <tr><td>Stretch Target</td><td>£5,500,000</td></tr>
+ <tr><td>Growth Required to Base</td><td>${growthBase.toFixed(1)}%</td></tr>
+ <tr><td>Growth Required to Stretch</td><td>${growthStretch.toFixed(1)}%</td></tr>
+ <tr><td>Gap to Base</td><td>£${Math.round(4500000-r26).toLocaleString()}</td></tr>
+ <tr><td>Gap to Stretch</td><td>£${Math.round(5500000-r26).toLocaleString()}</td></tr>
+ </table>`;
 
  const p={};
  w26.forEach(r=>{
@@ -143,32 +158,7 @@ build=async function(){
  render(countries,'country','Country');
  render(sources,'source','Source');
 
- 
-document.getElementById('assumptions').innerHTML=`
-<table>
-<tr><th>Assumption</th><th>Value</th></tr>
-<tr><td>Base Target</td><td>£4.5M</td></tr>
-<tr><td>Stretch Target</td><td>£5.5M</td></tr>
-<tr><td>Revenue Weight</td><td>40%</td></tr>
-<tr><td>Demand Share Weight</td><td>40%</td></tr>
-<tr><td>Growth Weight</td><td>20%</td></tr>
-</table>`;
-
-document.getElementById('methodology').innerHTML=`
-<b>Allocation Score</b> = 40% Revenue Share + 40% Demand Share + 20% Growth
-<p>Targets should be allocated using contribution, demand generation quality and historical growth.</p>`;
-
-document.getElementById('capacity').innerHTML=`
-<table>
-<tr><th>Metric</th><th>Required</th></tr>
-<tr><td>Revenue Target</td><td>£4.5M</td></tr>
-<tr><td>Won Opportunities</td><td>Derived in next release</td></tr>
-<tr><td>Qualified Leads</td><td>Derived in next release</td></tr>
-<tr><td>Total Leads</td><td>Derived in next release</td></tr>
-</table>`;
-
-document.getElementById('allocation').innerHTML=`
-
+ document.getElementById('allocation').innerHTML=`
  <div class="grid">
  <div class="card"><b>Base Target</b><br>£4.5M</div>
  <div class="card"><b>Stretch Target</b><br>£5.5M</div>
@@ -207,26 +197,5 @@ window.addEventListener('load',()=>{
   setTimeout(()=>build().catch(console.error),500);
 });
 </script>
-
-<div class="section">
-<h3>FY27 Planning Assumptions</h3>
-<div id="assumptions"></div>
-</div>
-
-<div class="section">
-<h3>Allocation Methodology</h3>
-<div id="methodology"></div>
-</div>
-
-<div class="section">
-<h3>Capacity Requirements</h3>
-<div id="capacity"></div>
-</div>
-
-<div class="section">
-<h3>Why This Target?</h3>
-<div id="whyTarget">Select a programme, country or source from planning outputs to understand target rationale.</div>
-</div>
-
 </body>
 </html>
