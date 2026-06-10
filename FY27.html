@@ -1,4 +1,4 @@
-1.3C
+1.3CC
 <!DOCTYPE html>
 <html>
 <head>
@@ -40,7 +40,7 @@ async function loadWorkbook(path){
  const buffer = await resp.arrayBuffer();
  const wb = XLSX.read(buffer,{type:'array'});
  const ws = wb.Sheets[wb.SheetNames[0]];
- return XLSX.utils.sheet_to_json(ws,{defval:''});
+ return XLSX.utils.sheet_to_json(ws,{ range:11,defval:''});
 }
 
 async function readExcel(file){
