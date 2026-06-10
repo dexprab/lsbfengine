@@ -1,4 +1,4 @@
-1.3B
+1.3C
 <!DOCTYPE html>
 <html>
 <head>
@@ -121,8 +121,8 @@ const _build=build;
 build=async function(){
  await _build();
 
- const w26=await readExcel(document.getElementById('w26').files[0]);
- const q26=await readExcel(document.getElementById('q26').files[0]);
+ const w26=await loadWorkbook('./data/Qualified_History/OPP_ALL_WON_FY26.xlsx');
+ const q26=await loadWorkbook('./data/Qualified_History/Lead_Qualified_Opp_FY26.xlsx');
 
  const demand26=new Set(q26.map(r=>String(r['Opportunity ID']||'').trim()));
 
