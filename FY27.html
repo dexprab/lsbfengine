@@ -1,4 +1,4 @@
-1.2
+1.3B
 <!DOCTYPE html>
 <html>
 <head>
@@ -16,15 +16,12 @@ th{background:#eee}
 </style>
 </head>
 <body>
-<h1>RevOps Forecast Intelligence R1.2A</h1>
+<h1>RevOps Forecast Intelligence R1.3B GitHub Integrated</h1>
 
 <div class="section">
-<h3>Load Attribution Files</h3>
-<input type="file" id="q25"> Lead_Qualified_Opp_FY25<br><br>
-<input type="file" id="w25"> OPP_ALL_WON_FY25<br><br>
-<input type="file" id="q26"> Lead_Qualified_Opp_FY26<br><br>
-<input type="file" id="w26"> OPP_ALL_WON_FY26<br><br>
-<button onclick="build()">Build Forecast Model</button>
+<h3>GitHub Data Status</h3>
+<div id="status">Auto-loading data from ./data/Qualified_History ...</div>
+<button onclick="build()">Refresh Forecast Model</button>
 </div>
 
 <div class="section">
@@ -38,6 +35,14 @@ th{background:#eee}
 </div>
 
 <script>
+async function loadWorkbook(path){
+ const resp = await fetch(path);
+ const buffer = await resp.arrayBuffer();
+ const wb = XLSX.read(buffer,{type:'array'});
+ const ws = wb.Sheets[wb.SheetNames[0]];
+ return XLSX.utils.sheet_to_json(ws,{defval:''});
+}
+
 async function readExcel(file){
  return new Promise(resolve=>{
    const r=new FileReader();
@@ -63,10 +68,11 @@ function seg(r){
 }
 
 async function build(){
- const q25=await readExcel(document.getElementById('q25').files[0]);
- const w25=await readExcel(document.getElementById('w25').files[0]);
- const q26=await readExcel(document.getElementById('q26').files[0]);
- const w26=await readExcel(document.getElementById('w26').files[0]);
+ const q25=await loadWorkbook('./data/Qualified_History/Lead_Qualified_Opp_FY25.xlsx');
+ const w25=await loadWorkbook('./data/Qualified_History/OPP_ALL_WON_FY25.xlsx');
+ const q26=await loadWorkbook('./data/Qualified_History/Lead_Qualified_Opp_FY26.xlsx');
+ const w26=await loadWorkbook('./data/Qualified_History/OPP_ALL_WON_FY26.xlsx');
+ document.getElementById('status').innerHTML='✓ FY25 Loaded<br>✓ FY26 Loaded<br>✓ Forecast Model Ready';
 
  const demand25=new Set(q25.map(r=>String(r['Opportunity ID']||'').trim()));
  const demand26=new Set(q26.map(r=>String(r['Opportunity ID']||'').trim()));
@@ -100,6 +106,81 @@ async function build(){
  h+='</table>';
  document.getElementById('prog').innerHTML=h;
 }
+
+
+function groupBy(rows,key){
+ const m={};
+ rows.forEach(r=>{
+   const k=(r[key]||'Unknown').toString().trim()||'Unknown';
+   m[k]=(m[k]||0)+(+r['Sales Price']||0);
+ });
+ return m;
+}
+
+const _build=build;
+build=async function(){
+ await _build();
+
+ const w26=await readExcel(document.getElementById('w26').files[0]);
+ const q26=await readExcel(document.getElementById('q26').files[0]);
+
+ const demand26=new Set(q26.map(r=>String(r['Opportunity ID']||'').trim()));
+
+ const scenario=parseFloat(document.getElementById('scenario').value||'0.7');
+
+ const countries=groupBy(w26,'Account Country');
+ const sources=groupBy(w26,'Lead Source');
+
+ function render(obj,id,label){
+   let rows=Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,20);
+   let h=`<table><tr><th>${label}</th><th>FY26 Revenue</th><th>FY27 Forecast</th></tr>`;
+   rows.forEach(([k,v])=>{
+      h+=`<tr><td>${k}</td><td>£${Math.round(v).toLocaleString()}</td><td>£${Math.round(v*(1+0.1*scenario)).toLocaleString()}</td></tr>`;
+   });
+   h+='</table>';
+   document.getElementById(id).innerHTML=h;
+ }
+ render(countries,'country','Country');
+ render(sources,'source','Source');
+
+ document.getElementById('allocation').innerHTML=`
+ <div class="grid">
+ <div class="card"><b>Base Target</b><br>£4.5M</div>
+ <div class="card"><b>Stretch Target</b><br>£5.5M</div>
+ <div class="card"><b>Scenario</b><br>${document.getElementById('scenario').selectedOptions[0].text}</div>
+ <div class="card"><b>Status</b><br>Planning Ready</div>
+ </div>`;
+}
+</script>
+
+<div class="section">
+<h3>Scenario Engine</h3>
+<select id="scenario">
+<option value="0.5">Conservative</option>
+<option value="0.7" selected>Expected</option>
+<option value="1.0">Stretch</option>
+</select>
+</div>
+
+<div class="section">
+<h3>Country Planning Intelligence</h3>
+<div id="country"></div>
+</div>
+
+<div class="section">
+<h3>Source Planning Intelligence</h3>
+<div id="source"></div>
+</div>
+
+<div class="section">
+<h3>FY27 Target Allocation Engine</h3>
+<div id="allocation"></div>
+</div>
+
+<script>
+window.addEventListener('load',()=>{
+  setTimeout(()=>build().catch(console.error),500);
+});
 </script>
 </body>
 </html>
